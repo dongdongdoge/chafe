@@ -1,0 +1,118 @@
+rho,fraction,method,source_type,m,N,M,tau,eps0,delta,decoder,bound
+0.1,0.9048374180359595,Singleton,formula,100000,1000000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.1,0.09048374180359596,Two-collision,formula,100000,1000000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.1,0.004678840160444397,Three-or-more collision,formula,100000,1000000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.15,0.8607079764250578,Singleton,formula,100000,666667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.15,0.12910619646375868,Two-collision,formula,100000,666667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.15,0.010185827111183543,Three-or-more collision,formula,100000,666667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.2,0.8187307530779818,Singleton,formula,100000,500000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.2,0.1637461506155964,Two-collision,formula,100000,500000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.2,0.017523096306421904,Three-or-more collision,formula,100000,500000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.25,0.7788007830714049,Singleton,formula,100000,400000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.25,0.19470019576785122,Two-collision,formula,100000,400000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.25,0.026499021160743874,Three-or-more collision,formula,100000,400000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.3,0.7408182206817179,Singleton,formula,100000,333334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.3,0.22224546620451535,Two-collision,formula,100000,333334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.3,0.03693631311376677,Three-or-more collision,formula,100000,333334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.35,0.7046880897187134,Singleton,formula,100000,285715,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.35,0.2466408314015497,Two-collision,formula,100000,285715,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.35,0.04867107887973676,Three-or-more collision,formula,100000,285715,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.4,0.6703200460356393,Singleton,formula,100000,250000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.4,0.26812801841425576,Two-collision,formula,100000,250000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.4,0.061551935550104964,Three-or-more collision,formula,100000,250000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.44999999999999996,0.6376281516217733,Singleton,formula,100000,222223,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.44999999999999996,0.28693266822979796,Two-collision,formula,100000,222223,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.44999999999999996,0.07543918014842865,Three-or-more collision,formula,100000,222223,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5,0.6065306597126334,Singleton,formula,100000,200000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5,0.3032653298563167,Two-collision,formula,100000,200000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5,0.09020401043104986,Three-or-more collision,formula,100000,200000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5499999999999999,0.5769498103804868,Singleton,formula,100000,181819,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5499999999999999,0.3173223957092677,Two-collision,formula,100000,181819,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.5499999999999999,0.10572779391024567,Three-or-more collision,formula,100000,181819,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6,0.5488116360940265,Singleton,formula,100000,166667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6,0.3292869816564159,Two-collision,formula,100000,166667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6,0.1219013822495576,Three-or-more collision,formula,100000,166667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6499999999999999,0.522045776761016,Singleton,formula,100000,153847,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6499999999999999,0.3393297548946604,Two-collision,formula,100000,153847,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.6499999999999999,0.13862446834432363,Three-or-more collision,formula,100000,153847,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7,0.4965853037914095,Singleton,formula,100000,142858,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7,0.34760971265398666,Two-collision,formula,100000,142858,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7,0.15580498355460382,Three-or-more collision,formula,100000,142858,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7499999999999999,0.47236655274101474,Singleton,formula,100000,133334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7499999999999999,0.354274914555761,Two-collision,formula,100000,133334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7499999999999999,0.1733585327032242,Three-or-more collision,formula,100000,133334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7999999999999999,0.4493289641172216,Singleton,formula,100000,125001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7999999999999999,0.35946317129377725,Two-collision,formula,100000,125001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.7999999999999999,0.1912078645890012,Three-or-more collision,formula,100000,125001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8499999999999999,0.4274149319487267,Singleton,formula,100000,117648,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8499999999999999,0.36330269215641764,Two-collision,formula,100000,117648,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8499999999999999,0.20928237589485565,Three-or-more collision,formula,100000,117648,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8999999999999999,0.40656965974059917,Singleton,formula,100000,111112,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8999999999999999,0.36591269376653923,Two-collision,formula,100000,111112,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.8999999999999999,0.22751764649286166,Three-or-more collision,formula,100000,111112,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.95,0.38674102345450123,Singleton,formula,100000,105264,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.95,0.3674039722817761,Two-collision,formula,100000,105264,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.95,0.24585500426372264,Three-or-more collision,formula,100000,105264,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.9999999999999999,0.3678794411714424,Singleton,formula,100000,100001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.9999999999999999,0.36787944117144233,Two-collision,formula,100000,100001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+0.9999999999999999,0.2642411176571152,Three-or-more collision,formula,100000,100001,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.05,0.3499377491111553,Singleton,formula,100000,95239,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.05,0.3674346365667131,Two-collision,formula,100000,95239,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.05,0.2826276143221317,Three-or-more collision,formula,100000,95239,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.0999999999999999,0.3328710836980796,Singleton,formula,100000,90910,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.0999999999999999,0.3661581920678875,Two-collision,formula,100000,90910,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.0999999999999999,0.3009707242340329,Three-or-more collision,formula,100000,90910,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.15,0.3166367693790533,Singleton,formula,100000,86957,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.15,0.36413228478591125,Two-collision,formula,100000,86957,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.15,0.31923094583503553,Three-or-more collision,formula,100000,86957,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.2,0.30119421191220214,Singleton,formula,100000,83334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.2,0.36143305429464256,Two-collision,formula,100000,83334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.2,0.33737273379315524,Three-or-more collision,formula,100000,83334,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.25,0.2865047968601901,Singleton,formula,100000,80000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.25,0.35813099607523763,Two-collision,formula,100000,80000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.25,0.3553642070645723,Three-or-more collision,formula,100000,80000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.3,0.2725317930340126,Singleton,formula,100000,76924,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.3,0.3542913309442164,Two-collision,formula,100000,76924,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.3,0.3731768760217711,Three-or-more collision,formula,100000,76924,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.35,0.2592402606458915,Singleton,formula,100000,74075,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.35,0.3499743518719536,Two-collision,formula,100000,74075,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.35,0.39078538748215497,Three-or-more collision,formula,100000,74075,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.4,0.2465969639416065,Singleton,formula,100000,71429,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.4,0.3452357495182491,Two-collision,formula,100000,71429,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.4,0.40816728654014445,Three-or-more collision,formula,100000,71429,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.45,0.23457028809379765,Singleton,formula,100000,68966,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.45,0.34012691773600656,Two-collision,formula,100000,68966,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.45,0.4253027941701957,Three-or-more collision,formula,100000,68966,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5,0.22313016014842982,Singleton,formula,100000,66667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5,0.33469524022264474,Two-collision,formula,100000,66667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5,0.44217459962892547,Three-or-more collision,formula,100000,66667,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.55,0.21224797382674304,Singleton,formula,100000,64517,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.55,0.3289843594314517,Two-collision,formula,100000,64517,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.55,0.45876766674180525,Three-or-more collision,formula,100000,64517,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5999999999999999,0.20189651799465544,Singleton,formula,100000,62501,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5999999999999999,0.32303442879144867,Two-collision,formula,100000,62501,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.5999999999999999,0.4750690532138959,Three-or-more collision,formula,100000,62501,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.65,0.19204990862075413,Singleton,formula,100000,60607,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.65,0.3168823492242443,Two-collision,formula,100000,60607,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.65,0.4910677421550016,Three-or-more collision,formula,100000,60607,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.7,0.18268352405273466,Singleton,formula,100000,58824,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.7,0.3105619908896489,Two-collision,formula,100000,58824,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.7,0.5067544850576164,Three-or-more collision,formula,100000,58824,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.75,0.17377394345044514,Singleton,formula,100000,57143,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.75,0.304104401038279,Two-collision,formula,100000,57143,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.75,0.5221216555112759,Three-or-more collision,formula,100000,57143,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8,0.16529888822158653,Singleton,formula,100000,55556,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8,0.2975379987988558,Two-collision,formula,100000,55556,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8,0.5371631129795578,Three-or-more collision,formula,100000,55556,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8499999999999999,0.15723716631362764,Singleton,formula,100000,54055,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8499999999999999,0.2908887576802111,Two-collision,formula,100000,54055,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.8499999999999999,0.5518740760061613,Three-or-more collision,formula,100000,54055,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.9,0.14956861922263506,Singleton,formula,100000,52632,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.9,0.2841803765230066,Two-collision,formula,100000,52632,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.9,0.5662510042543583,Three-or-more collision,formula,100000,52632,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.95,0.1422740715865136,Singleton,formula,100000,51283,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.95,0.2774344395937015,Two-collision,formula,100000,51283,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+1.95,0.5802914888197849,Three-or-more collision,formula,100000,51283,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+2.0,0.1353352832366127,Singleton,formula,100000,50000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+2.0,0.2706705664732254,Two-collision,formula,100000,50000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization
+2.0,0.5939941502901619,Three-or-more collision,formula,100000,50000,200000,2.0,1.0,1e-06,report_side_collision_regime,poissonization

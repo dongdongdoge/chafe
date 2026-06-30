@@ -1,0 +1,33 @@
+{
+  "clean_csv": "datasets/adult/adult_clean.csv",
+  "dataset": "UCI Adult / Census Income",
+  "fields": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education_num",
+    "marital_status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital_gain",
+    "capital_loss",
+    "hours_per_week",
+    "native_country",
+    "income"
+  ],
+  "missing_token": "?",
+  "notes": "The script strips whitespace, removes the trailing period in the test-set income label, and keeps '?' as an explicit categorical value.",
+  "raw_urls": {
+    "adult.data": "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
+    "adult.names": "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.names",
+    "adult.test": "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
+  },
+  "rows_test": 16281,
+  "rows_total": 48842,
+  "rows_train": 32561,
+  "uci_id": 2,
+  "uci_page": "https://archive.ics.uci.edu/dataset/2/adult"
+}

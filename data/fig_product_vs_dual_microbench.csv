@@ -1,0 +1,3 @@
+method,time_ms_per_report,standard_error_ms,normalized_expansion_work,speedup_vs_product,source_type,benchmark,N,log_n,reports_per_repeat,repeats,checksum,m,rho,M,tau,eps0,delta,decoder,build_target,platform_system,platform_release,platform_machine,python_version
+Google DPF product-valued,10.1069,1.04735,1.0,1.0,microbenchmark,google_distributed_point_functions,4096,12,8,5,1308521528,,,,,,,google_dpf_ingestion_kernel,//chafe:google_dpf_write_benchmark,Darwin,24.6.0,x86_64,3.9.12
+Google DPF dual-track,6.72935,0.166034,2.0,0.665817,microbenchmark,google_distributed_point_functions,4096,12,8,5,1308521528,,,,,,,google_dpf_ingestion_kernel,//chafe:google_dpf_write_benchmark,Darwin,24.6.0,x86_64,3.9.12

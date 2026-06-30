@@ -1,0 +1,16 @@
+epsilon_prime,method,source_type,m,N,rho,M,tau,eps0,delta,decoder,randomizer,domain_size,seeds,workload,f1,standard_error,metric
+0.02,Local,monte_carlo,5000,5000,1.0,10000,2.0,0.02,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.20333333333333334,0.00959326072516515,top_50_f1
+0.02,IdealShuffle,monte_carlo,5000,5000,1.0,10000,2.0,0.2682349319352768,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.19866666666666666,0.008465390436893159,top_50_f1
+0.02,Drop,monte_carlo,5000,5000,1.0,10000,2.0,0.9929534172577783,1e-06,drop,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.194,0.007916228058025276,top_50_f1
+0.04,Local,monte_carlo,5000,5000,1.0,10000,2.0,0.04,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.202,0.009215179880495283,top_50_f1
+0.04,IdealShuffle,monte_carlo,5000,5000,1.0,10000,2.0,0.5317910994734614,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.20266666666666666,0.00722278217693701,top_50_f1
+0.04,Drop,monte_carlo,5000,5000,1.0,10000,2.0,1.8107732404322365,1e-06,drop,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.23533333333333334,0.009131646794531456,top_50_f1
+0.08,Local,monte_carlo,5000,5000,1.0,10000,2.0,0.08,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.18666666666666668,0.00901254978570697,top_50_f1
+0.08,IdealShuffle,monte_carlo,5000,5000,1.0,10000,2.0,1.0300187537478285,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.226,0.009644246691829983,top_50_f1
+0.08,Drop,monte_carlo,5000,5000,1.0,10000,2.0,2.9477150590067724,1e-06,drop,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.30066666666666664,0.009071026673106773,top_50_f1
+0.16,Local,monte_carlo,5000,5000,1.0,10000,2.0,0.16,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.20733333333333334,0.009419145742232146,top_50_f1
+0.16,IdealShuffle,monte_carlo,5000,5000,1.0,10000,2.0,1.8684285627273847,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.2653333333333333,0.00888927202239433,top_50_f1
+0.16,Drop,monte_carlo,5000,5000,1.0,10000,2.0,4.254832723066957,1e-06,drop,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.4186666666666667,0.013145807717154488,top_50_f1
+0.32,Local,monte_carlo,5000,5000,1.0,10000,2.0,0.32,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.19333333333333333,0.00769136451630043,top_50_f1
+0.32,IdealShuffle,monte_carlo,5000,5000,1.0,10000,2.0,3.019501160164456,1e-06,all_reports,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.36533333333333334,0.00873272788986737,top_50_f1
+0.32,Drop,monte_carlo,5000,5000,1.0,10000,2.0,5.619796647267138,1e-06,drop,k_ary_randomized_response,256,30,zipf_histogram_range_and_heavy_hitter,0.6080000000000001,0.010354631369807316,top_50_f1
