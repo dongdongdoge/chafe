@@ -5,33 +5,59 @@ from pathlib import Path
 from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ensure_dirs, fnum, read_csv
 
 
+BLUE = "{rgb,255:red,37;green,99;blue,235}"
+TEAL = "{rgb,255:red,0;green,150;blue,136}"
+ORANGE = "{rgb,255:red,213;green,94;blue,0}"
+PURPLE = "{rgb,255:red,126;green,87;blue,194}"
+GOLD = "{rgb,255:red,230;green,159;blue,0}"
+SKY = "{rgb,255:red,86;green,180;blue,233}"
+INK = "{rgb,255:red,31;green,41;blue,55}"
+SLATE = "{rgb,255:red,100;green,116;blue,139}"
+BLUE_FILL = "{rgb,255:red,219;green,234;blue,254}"
+ORANGE_FILL = "{rgb,255:red,255;green,237;blue,213}"
+TEAL_FILL = "{rgb,255:red,204;green,251;blue,241}"
+
 LINE_STYLES = [
-    "black, solid, mark=*, mark size=1.2pt",
-    "black!70, dashed, mark=square*, mark size=1.2pt",
-    "black!55, dotted, mark=triangle*, mark size=1.4pt",
-    "black!85, dashdotted, mark=diamond*, mark size=1.3pt",
+    f"color={BLUE}, solid, line width=0.82pt, mark=*, mark size=1.35pt, mark options={{solid, fill=white, line width=0.55pt}}",
+    f"color={ORANGE}, dashed, line width=0.82pt, mark=square*, mark size=1.35pt, mark options={{solid, fill=white, line width=0.55pt}}",
+    f"color={TEAL}, dotted, line width=0.95pt, mark=triangle*, mark size=1.5pt, mark options={{solid, fill=white, line width=0.55pt}}",
+    f"color={PURPLE}, dashdotted, line width=0.82pt, mark=diamond*, mark size=1.45pt, mark options={{solid, fill=white, line width=0.55pt}}",
+    f"color={GOLD}, densely dashed, line width=0.82pt, mark=pentagon*, mark size=1.35pt, mark options={{solid, fill=white, line width=0.55pt}}",
 ]
 
 FORMULA_LINE_STYLES = [
-    "black, solid, very thick, no markers",
-    "black!70, dashed, thick, no markers",
-    "black!52, dotted, thick, no markers",
-    "black!85, dashdotted, thick, no markers",
+    f"color={INK}, solid, line width=1.08pt, no markers",
+    f"color={BLUE}, dashed, line width=1.05pt, no markers",
+    f"color={TEAL}, dotted, line width=1.15pt, no markers",
+    f"color={ORANGE}, dashdotted, line width=1.05pt, no markers",
+    f"color={PURPLE}, densely dashed, line width=1.05pt, no markers",
+]
+
+BAR_STYLES = [
+    f"draw={BLUE}, fill={BLUE_FILL}, line width=0.55pt",
+    f"draw={ORANGE}, fill={ORANGE_FILL}, line width=0.55pt",
+    f"draw={TEAL}, fill={TEAL_FILL}, line width=0.55pt",
 ]
 
 
 def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
     opts = [
         f"width={width}",
-        "height=3.6cm",
-        "grid=both",
-        "grid style={gray!18}",
-        "major grid style={gray!25}",
+        "height=3.7cm",
+        "scale only axis",
+        "axis background/.style={fill=white}",
+        "grid=major",
+        "major grid style={draw=gray!22, line width=0.22pt}",
+        "minor tick num=1",
+        "minor grid style={draw=gray!10, line width=0.15pt}",
         "tick label style={font=\\footnotesize}",
         "label style={font=\\small}",
-        "legend style={font=\\scriptsize, fill=white, draw=black!20, at={(0.98,0.98)}, anchor=north east}",
-        "axis line style={black!70}",
-        "tick style={black!70}",
+        "legend style={font=\\scriptsize, fill=white, fill opacity=0.94, text opacity=1, draw=gray!18, line width=0.25pt, at={(0.98,0.98)}, anchor=north east, cells={anchor=west}}",
+        "legend image post style={line width=0.9pt}",
+        "axis line style={black!55, line width=0.35pt}",
+        "tick style={black!55, line width=0.35pt}",
+        "tick align=outside",
+        "clip marker paths=true",
         f"xlabel={{{xlabel}}}",
         f"ylabel={{{ylabel}}}",
     ]
@@ -74,6 +100,9 @@ def line_figure(
     rows = read_csv(DATA_DIR / csv_name)
     plots = []
     styles = line_styles or LINE_STYLES
+    axis_extra = extra_axis
+    if len(methods) >= 4 and "legend columns" not in axis_extra:
+        axis_extra = (axis_extra + ", " if axis_extra else "") + "legend columns=2"
     for idx, method in enumerate(methods):
         subset = method_rows(rows, method)
         if not subset:
@@ -89,7 +118,7 @@ def line_figure(
 \\centering
 \\begin{{tikzpicture}}
 \\begin{{axis}}[
-{axis_options(width, xlabel, ylabel, extra_axis)}
+{axis_options(width, xlabel, ylabel, axis_extra)}
 ]
 {chr(10).join(plots)}
 \\end{{axis}}
@@ -130,27 +159,31 @@ def privacy_surface_figure() -> None:
 \\centering
 \\begin{{tikzpicture}}
 \\begin{{axis}}[
-width=0.315\\textwidth,
-height=4.25cm,
-grid=both,
-grid style={{gray!15}},
+width=\\linewidth,
+height=4.15cm,
+scale only axis,
+axis background/.style={{fill=white}},
+grid=major,
+grid style={{draw=gray!18, line width=0.18pt}},
 tick label style={{font=\\scriptsize}},
 label style={{font=\\scriptsize}},
 title={{{title}}},
-title style={{font=\\small}},
+title style={{font=\\small, yshift=-0.5ex}},
 xlabel={{$\\rho=m/N$}},
 ylabel={{$\\tau=M/m$}},
 zlabel={{$\\epsilon'$}},
-view={{42}}{{25}},
-colormap={{chafeprivacy}}{{rgb255(0cm)=(68,1,84); rgb255(1cm)=(59,82,139); rgb255(2cm)=(33,145,140); rgb255(3cm)=(94,201,98); rgb255(4cm)=(253,231,37)}},
+view={{44}}{{27}},
+colormap={{chafesurface}}{{rgb255(0cm)=(30,58,138); rgb255(1cm)=(14,116,144); rgb255(2cm)=(13,148,136); rgb255(3cm)=(132,204,22); rgb255(4cm)=(250,204,21)}},
 colorbar=false,
-axis line style={{black!70}},
-tick style={{black!70}}
+axis line style={{black!50, line width=0.3pt}},
+tick style={{black!55}},
+z buffer=sort
 ]
 \\addplot3[
 surf,
-shader=interp,
-draw=black!18,
+shader=faceted interp,
+faceted color=white!38,
+draw=white!35,
 mesh/rows={mesh_rows}
 ] coordinates {{
 {coords}
@@ -215,16 +248,19 @@ def paired_line_figure(
         axis_opts = [
             "scale only axis",
             "width=\\linewidth",
-            "height=2.65cm",
-            "grid=both",
-            "grid style={gray!18}",
-            "major grid style={gray!25}",
-            "axis line style={black!70}",
-            "tick style={black!70}",
+            "height=2.72cm",
+            "axis background/.style={fill=white}",
+            "grid=major",
+            "major grid style={draw=gray!22, line width=0.2pt}",
+            "minor tick num=1",
+            "minor grid style={draw=gray!10, line width=0.15pt}",
+            "axis line style={black!55, line width=0.32pt}",
+            "tick style={black!55, line width=0.32pt}",
+            "tick align=outside",
             "tick label style={font=\\tiny}",
             "label style={font=\\scriptsize}",
             "title={" + title + "}",
-            "title style={font=\\scriptsize}",
+            "title style={font=\\scriptsize, yshift=-0.4ex}",
             "xlabel={" + xlabel + "}",
             "ylabel={" + (ylabel if panel == "Synthetic Zipf" else "") + "}",
         ]
@@ -255,7 +291,8 @@ scale only axis,
 height=0pt,
 width=0pt,
 legend columns={min(4, len(methods))},
-legend style={{font=\\tiny, fill=white, draw=black!15, /tikz/every even column/.append style={{column sep=0.35em}}}},
+legend style={{font=\\tiny, draw=none, fill=none, /tikz/every even column/.append style={{column sep=0.5em}}}},
+legend image post style={{line width=0.9pt}},
 legend to name={legend_name}
 ]
 {chr(10).join(legend_plots)}
@@ -277,6 +314,13 @@ def exact_vs_proxy_figure() -> None:
         ("m", "m", "$m$", "$\\rho=1$"),
     ]
     methods = ["Exact hockey-stick", "Second-order proxy"]
+    legend_name = "legend:exact-vs-proxy-drop"
+    legend_plots = []
+    for idx, method in enumerate(methods):
+        legend_plots.append(
+            "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {(0,0)};\n"
+            + f"\\addlegendentry{{{method}}}"
+        )
     rendered = []
     for sweep, x_col, xlabel, title in panels:
         subset = [row for row in rows if row["sweep"] == sweep]
@@ -286,14 +330,13 @@ def exact_vs_proxy_figure() -> None:
             plots.append(
                 "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
                 + coordinates(method_subset, x_col, "epsilon")
-                + "};\n"
-                + f"\\addlegendentry{{{method}}}"
+                + "};"
             )
         extra = "ymode=log"
         if x_col == "m":
             extra += ", xmode=log"
         panel_axis_options = axis_options(
-            "0.47\\textwidth",
+            "\\linewidth",
             xlabel,
             "$\\epsilon'$",
             "height=3.4cm, title={" + title + "}, title style={font=\\small}, " + extra,
@@ -313,6 +356,21 @@ def exact_vs_proxy_figure() -> None:
     body = f"""% Auto-generated from data/fig_exact_vs_proxy_drop.csv.
 \\begin{{figure*}}[t]
 \\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+hide axis,
+scale only axis,
+height=0pt,
+width=0pt,
+legend columns=2,
+legend style={{font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={{column sep=0.7em}}}},
+legend image post style={{line width=0.9pt}},
+legend to name={legend_name}
+]
+{chr(10).join(legend_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\ref{{{legend_name}}}\\par\\vspace{{0.7mm}}
 {chr(10).join(rendered)}
 \\caption{{Exact finite-domain hockey-stick validation for binary randomized response with matched BRR-neighbor padding ($\\epsilon_0=1$, $\\tau=2$, $\\delta=10^{{-6}}$). The left panel varies $\\rho$ at $m=10^5$; the right panel varies $m$ at $\\rho=1$. The second-order proxy remains conservative while tracking the same large-scale trend; the exact curve is still a count-domain validation experiment rather than a full large-domain implementation accountant.}}
 \\label{{fig:exact-vs-proxy-drop}}
@@ -348,14 +406,14 @@ def ingestion_latency_figure() -> None:
 \\begin{{axis}}[
 {opts}
 ]
-\\addplot+[black, solid, very thick, no markers] coordinates {{{coordinates(online, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addplot+[color={BLUE}, solid, line width=1.12pt, no markers] coordinates {{{coordinates(online, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{Chafe M/D/1 latency}}
-\\addplot+[black!65, dashed, thick, no markers] coordinates {{{coordinates(batch, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addplot+[color={GOLD}, dashed, line width=1.02pt, no markers] coordinates {{{coordinates(batch, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{collect gate}}
-\\addplot+[black!45, dotted, thick, no markers] coordinates {{{coordinates(overload, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addplot+[color={ORANGE}, dotted, line width=1.18pt, no markers] coordinates {{{coordinates(overload, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{overload horizon}}
 \\addplot+[black!35, densely dashed, no markers, forget plot] coordinates {{({fnum(service_rate)},1e-4) ({fnum(service_rate)},1e6)}};
-\\addplot+[black, only marks, mark=diamond*, mark size=1.8pt] coordinates {{({fnum(cross_x)},{fnum(cross_y)})}};
+\\addplot+[color={PURPLE}, only marks, mark=diamond*, mark size=1.8pt, mark options={{solid, fill=white, line width=0.65pt}}] coordinates {{({fnum(cross_x)},{fnum(cross_y)})}};
 \\addlegendentry{{estimated crossover}}
 \\node[font=\\tiny, rotate=90, anchor=south] at (axis cs:{fnum(service_rate)},2e-3) {{service rate}};
 \\end{{axis}}
@@ -381,7 +439,7 @@ def bar_figure_microbench() -> None:
         "0.48\\textwidth",
         "",
         "ms per report",
-        "ybar, bar width=13pt, symbolic x coords={Product,Dual}, xtick=data, ymin=0, enlarge x limits=0.35",
+        "ybar, bar width=15pt, symbolic x coords={Product,Dual}, xtick=data, ymin=0, enlarge x limits=0.34, ymajorgrids=true",
     )
     body = f"""% Auto-generated from data/fig_product_vs_dual_microbench.csv.
 \\begin{{figure}}[t]
@@ -390,9 +448,8 @@ def bar_figure_microbench() -> None:
 \\begin{{axis}}[
 {opts}
 ]
-\\addplot+[black!70, fill=black!20] coordinates {{
-(Product,{fnum(vals[product_name])}) (Dual,{fnum(vals[dual_name])})
-}};
+\\addplot+[{BAR_STYLES[0]}, bar shift=0pt] coordinates {{(Product,{fnum(vals[product_name])})}};
+\\addplot+[{BAR_STYLES[1]}, bar shift=0pt] coordinates {{(Dual,{fnum(vals[dual_name])})}};
 \\end{{axis}}
 \\end{{tikzpicture}}
 \\caption{{{caption}}}
@@ -422,7 +479,7 @@ def bar_figure_dpf_phase_breakdown() -> None:
         (
             "ybar, bar width=6pt, symbolic x coords={Keygen,Ctx,Eval,Acc}, "
             "xtick=data, ymin=0, enlarge x limits=0.22, "
-            "legend style={font=\\scriptsize, fill=white, draw=black!20, at={(0.98,0.98)}, anchor=north east}"
+            "legend style={font=\\scriptsize, fill=white, fill opacity=0.94, text opacity=1, draw=gray!18, line width=0.25pt, at={(0.98,0.98)}, anchor=north east}"
         ),
     )
     body = f"""% Auto-generated from data/fig_dpf_phase_breakdown.csv.
@@ -432,9 +489,9 @@ def bar_figure_dpf_phase_breakdown() -> None:
 \\begin{{axis}}[
 {opts}
 ]
-\\addplot+[black!70, fill=black!20] coordinates {{{product_coords}}};
+\\addplot+[{BAR_STYLES[0]}] coordinates {{{product_coords}}};
 \\addlegendentry{{Product}}
-\\addplot+[black!35, fill=black!5] coordinates {{{dual_coords}}};
+\\addplot+[{BAR_STYLES[1]}] coordinates {{{dual_coords}}};
 \\addlegendentry{{Dual}}
 \\end{{axis}}
 \\end{{tikzpicture}}
