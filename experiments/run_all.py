@@ -53,8 +53,9 @@ def summarize_outputs() -> str:
 
     exact_ratios = [float(row["exact_to_proxy_ratio"]) for row in exact_rows]
     product = next(
-        row for row in micro_rows if row["method"] in ("Google DPF product-valued", "Product-valued kernel")
+        row for row in micro_rows if row["method"] in ("Google DPF packed64", "Product-valued kernel")
     )
+    tuple_product = next((row for row in micro_rows if row["method"] == "Google DPF tuple product"), None)
     dual = next(row for row in micro_rows if row["method"] in ("Google DPF dual-track", "Dual-track kernel"))
     delay_1m = closest(delay_rows, "m", 1_000_000, "Collect-then-shuffle")
     range_drop_016 = closest(range_rows, "epsilon_prime", 0.16, "Drop")
@@ -63,19 +64,19 @@ def summarize_outputs() -> str:
     sum_drop_016 = closest(sum_rows, "epsilon_prime", 0.16, "Drop")
     f1_drop_032 = closest(f1_rows, "epsilon_prime", 0.32, "Drop")
     f1_ideal_032 = closest(f1_rows, "epsilon_prime", 0.32, "IdealShuffle")
-    product_scaling_rows = [row for row in scaling_rows if row["method"] == "Google DPF product-valued"]
+    product_scaling_rows = [row for row in scaling_rows if row["method"] == "Google DPF packed64"]
     product_small = min(product_scaling_rows, key=lambda row: float(row["N"]))
     product_large = max(product_scaling_rows, key=lambda row: float(row["N"]))
     online_latency_rows = [row for row in latency_rows if row["method"] == "Chafe online DPF service"]
     service_n = int(float(online_latency_rows[0]["N"])) if online_latency_rows else 2**17
-    throughput_service = closest(throughput_rows, "N", service_n, "Google DPF product-valued")
+    throughput_service = closest(throughput_rows, "N", service_n, "Google DPF packed64")
     chafe_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Chafe online DPF service")
     batch_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Collect-then-shuffle gate")
     phase_eval_product = next(
-        row for row in phase_rows if row["method"] == "Google DPF product-valued" and row["phase"] == "eval"
+        row for row in phase_rows if row["method"] == "Google DPF packed64" and row["phase"] == "eval"
     )
     phase_total_product = next(
-        row for row in phase_rows if row["method"] == "Google DPF product-valued" and row["phase"] == "total"
+        row for row in phase_rows if row["method"] == "Google DPF packed64" and row["phase"] == "total"
     )
     fixed_range_all_1 = closest(fixed_range_rows, "eps0", 1.0, "All reports")
     fixed_range_drop_1 = closest(fixed_range_rows, "eps0", 1.0, "Drop")
@@ -105,23 +106,27 @@ def summarize_outputs() -> str:
                 f"{min(exact_ratios):.3g}..{max(exact_ratios):.3g} over the rho grid."
             ),
             (
-                f"- {product['benchmark']} product-valued backend measured "
+                f"- {product['benchmark']} packed64 backend measured "
                 f"{float(product['time_ms_per_report']):.3g} ms/report; "
-                f"dual-track measured {float(dual['time_ms_per_report']):.3g} ms/report "
-                f"({float(dual['speedup_vs_product']):.2f}x dual/product time ratio)."
+                + (
+                    f"tuple-product measured {float(tuple_product['time_ms_per_report']):.3g} ms/report; "
+                    if tuple_product is not None
+                    else ""
+                )
+                + f"dual-track measured {float(dual['time_ms_per_report']):.3g} ms/report."
             ),
             (
-                f"- Google DPF product-valued scaling: {float(product_small['time_ms_per_report']):.3g} "
+                f"- Google DPF packed64 scaling: {float(product_small['time_ms_per_report']):.3g} "
                 f"ms/report at N={int(float(product_small['N']))} and {float(product_large['time_ms_per_report']):.3g} "
                 f"ms/report at N={int(float(product_large['N']))}."
             ),
             (
-                f"- At N={int(float(phase_total_product['N']))}, product-valued DPF evaluation accounts for "
+                f"- At N={int(float(phase_total_product['N']))}, packed64 DPF evaluation accounts for "
                 f"{float(phase_eval_product['time_ms_per_report']) / float(phase_total_product['time_ms_per_report']):.1%} "
                 f"of measured per-report backend time."
             ),
             (
-                f"- The measured product-valued DPF service rate at N={service_n} is "
+                f"- The measured packed64 DPF service rate at N={service_n} is "
                 f"{float(throughput_service['reports_per_second']):.3g} reports/s. At arrival rate 40 reports/s, "
                 f"the analytic online service latency is {float(chafe_latency_40['avg_latency_seconds']):.3g} s, "
                 f"while collect-then-shuffle batch gating for m=1e6 is "

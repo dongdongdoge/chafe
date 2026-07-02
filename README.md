@@ -16,8 +16,9 @@ row records its provenance through a `source_type` field.
   `distributed_point_functions` write-backend benchmark, plus analytic latency
   models derived from the measured eval-all service rate.  The benchmark
   uses `N=2^17` as the default large slot domain, extends the scaling curve to
-  `N=2^18`, and reports the worker-thread count and compile-time CPU
-  acceleration label in every CSV row.
+  `N=2^18`, compares an optimized packed64 write backend against tuple-product
+  and dual-track baselines, and reports the worker-thread count and
+  compile-time CPU acceleration label in every CSV row.
 - Workload figures are Monte Carlo simulations with at least 30 seeds.  The
   default synthetic and real-data workload size is `m=100,000`.
 - The real-data workload uses a cleaned copy of the UCI Adult/Census Income
@@ -99,7 +100,7 @@ The validation checks include:
 - IdealShuffle privacy is independent of `rho` and `tau`.
 - Collision-regime fractions sum to one.
 - Exact-accountant and proxy Drop values remain in the same broad order.
-- Google DPF product and dual-track reconstructions agree.
+- Google DPF packed64, tuple-product, and dual-track reconstructions agree.
 - Microbenchmark rows have positive measured time.
 - Measured DPF service-rate rows are positive.
 - Google DPF thread-scaling rows have positive throughput and matching
@@ -126,10 +127,15 @@ are not measured runtime.
 ## Notes
 
 The Google DPF measurement is a backend microbenchmark, not an end-to-end
-deployment throughput claim.  The thread-scaling benchmark parallelizes
-independent report batches into private accumulators and then reduces them; it
-does not model network scheduling or deployment-level admission control.  The
-latency-vs-arrival-rate figure combines the measured single-thread eval-all
-service rate with an explicit M/D/1 queueing model and a separate
-collect-then-shuffle batch-gating formula.  Privacy and workload utility are
-decoupled from this concrete DPF backend.
+deployment throughput claim.  The packed64 backend encodes the per-slot
+occupancy counter and payload aggregate into one 64-bit DPF value using an
+8-bit counter field and a 56-bit payload field; the tuple-product and
+dual-track paths are retained as unoptimized baselines.  Deployments with
+larger per-slot payloads or load factors should choose a counter/payload split
+that rules out counter carry into the payload field.  The thread-scaling
+benchmark parallelizes independent report batches into private accumulators and
+then reduces them; it does not model network scheduling or deployment-level
+admission control.  The latency-vs-arrival-rate figure combines the measured
+single-thread packed64 eval-all service rate with an explicit M/D/1 queueing
+model and a separate collect-then-shuffle batch-gating lower bound.  Privacy and
+workload utility are decoupled from this concrete DPF backend.

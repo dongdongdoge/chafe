@@ -45,6 +45,9 @@ BAR_STYLES = [
 MAX_LINE_COORDS = 34
 MAX_SURFACE_RHO = 23
 MAX_SURFACE_TAU = 21
+PACKED_METHOD = "Google DPF packed64"
+TUPLE_METHOD = "Google DPF tuple product"
+DUAL_METHOD = "Google DPF dual-track"
 
 
 def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
@@ -410,7 +413,9 @@ def ingestion_latency_figure() -> None:
     online = method_rows(rows, "Chafe online DPF service")
     batch = method_rows(rows, "Collect-then-shuffle gate")
     overload = method_rows(rows, "Chafe overload horizon")
-    crossover = method_rows(rows, "Estimated crossover")
+    crossover = method_rows(rows, "Queue/gate equality")
+    if not crossover:
+        crossover = method_rows(rows, "Estimated crossover")
     if not online or not batch or not overload or not crossover:
         raise ValueError("fig_ingestion_latency_vs_rate.csv is missing latency-model rows")
     service_rate = float(online[0]["service_rate_reports_per_s"])
@@ -435,18 +440,18 @@ def ingestion_latency_figure() -> None:
 {opts}
 ]
 \\addplot+[color={BLUE}, solid, line width=1.12pt, no markers] coordinates {{{coordinates(online, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
-\\addlegendentry{{Chafe M/D/1 latency}}
+\\addlegendentry{{Chafe packed64 M/D/1 latency}}
 \\addplot+[color={GOLD}, dashed, line width=1.02pt, no markers] coordinates {{{coordinates(batch, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{collect gate}}
 \\addplot+[color={ORANGE}, dotted, line width=1.18pt, no markers] coordinates {{{coordinates(overload, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{overload horizon}}
 \\addplot+[black!35, densely dashed, no markers, forget plot] coordinates {{({fnum(service_rate)},1e-4) ({fnum(service_rate)},1e6)}};
 \\addplot+[color={PURPLE}, only marks, mark=diamond*, mark size=1.8pt, mark options={{solid, fill=white, line width=0.65pt}}] coordinates {{({fnum(cross_x)},{fnum(cross_y)})}};
-\\addlegendentry{{estimated crossover}}
+\\addlegendentry{{queue/gate equality}}
 \\node[font=\\tiny, rotate=90, anchor=south] at (axis cs:{fnum(service_rate)},2e-3) {{service rate}};
 \\end{{axis}}
 \\end{{tikzpicture}}
-\\caption{{Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{{{service_log_n}}}={service_n}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. The vertical line marks the measured single-thread service rate. The dotted overload curve is not steady-state latency; it is the time to accumulate one epoch of backlog after arrivals exceed service capacity.}}
+\\caption{{Analytic latency model combining the measured packed64 Google DPF eval-all service rate at $N=2^{{{service_log_n}}}={service_n}$ with an M/D/1 queue, compared with a collect-then-shuffle batch-gating lower bound for $m=10^6$. The vertical line marks the measured single-thread service rate. The dotted overload curve is not steady-state latency; it is the time to accumulate one epoch of backlog after arrivals exceed service capacity.}}
 \\label{{fig:ingestion-latency-vs-rate}}
 \\end{{figure}}
 """
@@ -458,18 +463,19 @@ def bar_figure_microbench() -> None:
     vals = {row["method"]: float(row["time_ms_per_report"]) for row in rows}
     benchmark_n = int(float(rows[0]["N"]))
     benchmark_log_n = int(float(rows[0]["log_n"]))
-    product_name = "Google DPF product-valued" if "Google DPF product-valued" in vals else "Product-valued kernel"
-    dual_name = "Google DPF dual-track" if "Google DPF dual-track" in vals else "Dual-track kernel"
+    product_name = PACKED_METHOD if PACKED_METHOD in vals else "Product-valued kernel"
+    tuple_name = TUPLE_METHOD if TUPLE_METHOD in vals else ""
+    dual_name = DUAL_METHOD if DUAL_METHOD in vals else "Dual-track kernel"
     benchmark = rows[0].get("benchmark", "")
     if benchmark == "google_distributed_point_functions":
-        caption = f"Measured Google distributed-point-functions backend for product-valued versus dual-track hidden-slot ingestion at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. The benchmark generates DPF keys, evaluates both server keys over the full slot domain, accumulates shares, and verifies reconstruction."
+        caption = f"Measured Google distributed-point-functions write backends at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. Packed64 encodes the occupancy counter and payload in one 64-bit value; tuple product and dual-track are unoptimized baselines. The benchmark generates DPF keys, evaluates both server keys over the full slot domain, accumulates shares, and verifies reconstruction."
     else:
         caption = "Measured NumPy dense DPF-expansion kernel proxy for product-valued versus dual-track ingestion. The benchmark measures wall-clock traversal and pseudorandom expansion cost per report; it is not a full DPF implementation throughput claim."
     opts = axis_options(
         "0.48\\textwidth",
         "",
         "ms per report",
-        "ybar, bar width=15pt, symbolic x coords={Product,Dual}, xtick=data, ymin=0, enlarge x limits=0.34, ymajorgrids=true",
+        "ybar, bar width=11pt, symbolic x coords={Packed,Tuple,Dual}, xtick=data, ymin=0, enlarge x limits=0.25, ymajorgrids=true",
     )
     body = f"""% Auto-generated from data/fig_product_vs_dual_microbench.csv.
 \\begin{{figure}}[t]
@@ -478,7 +484,8 @@ def bar_figure_microbench() -> None:
 \\begin{{axis}}[
 {opts}
 ]
-\\addplot+[{BAR_STYLES[0]}, bar shift=0pt] coordinates {{(Product,{fnum(vals[product_name])})}};
+\\addplot+[{BAR_STYLES[0]}, bar shift=0pt] coordinates {{(Packed,{fnum(vals[product_name])})}};
+{"%" if not tuple_name else "\\addplot+[" + BAR_STYLES[2] + ", bar shift=0pt] coordinates {(Tuple," + fnum(vals[tuple_name]) + ")};"}
 \\addplot+[{BAR_STYLES[1]}, bar shift=0pt] coordinates {{(Dual,{fnum(vals[dual_name])})}};
 \\end{{axis}}
 \\end{{tikzpicture}}
@@ -500,16 +507,18 @@ def bar_figure_dpf_phase_breakdown() -> None:
         "accumulate": "Acc",
     }
     phases = ["keygen", "context", "eval", "accumulate"]
-    product = {row["phase"]: float(row["time_ms_per_report"]) for row in rows if row["method"] == "Google DPF product-valued"}
-    dual = {row["phase"]: float(row["time_ms_per_report"]) for row in rows if row["method"] == "Google DPF dual-track"}
+    product = {row["phase"]: float(row["time_ms_per_report"]) for row in rows if row["method"] == PACKED_METHOD}
+    tuple_product = {row["phase"]: float(row["time_ms_per_report"]) for row in rows if row["method"] == TUPLE_METHOD}
+    dual = {row["phase"]: float(row["time_ms_per_report"]) for row in rows if row["method"] == DUAL_METHOD}
     product_coords = " ".join(f"({phase_names[phase]},{fnum(product[phase])})" for phase in phases)
+    tuple_coords = " ".join(f"({phase_names[phase]},{fnum(tuple_product[phase])})" for phase in phases)
     dual_coords = " ".join(f"({phase_names[phase]},{fnum(dual[phase])})" for phase in phases)
     opts = axis_options(
         "0.48\\textwidth",
         "",
         "ms per report",
         (
-            "ybar, bar width=6pt, symbolic x coords={Keygen,Ctx,Eval,Acc}, "
+            "ybar, bar width=4.5pt, symbolic x coords={Keygen,Ctx,Eval,Acc}, "
             "xtick=data, ymin=0, enlarge x limits=0.22, "
             "legend style={font=\\scriptsize, fill=white, fill opacity=0.94, text opacity=1, draw=gray!18, line width=0.25pt, at={(0.98,0.98)}, anchor=north east}"
         ),
@@ -522,12 +531,14 @@ def bar_figure_dpf_phase_breakdown() -> None:
 {opts}
 ]
 \\addplot+[{BAR_STYLES[0]}] coordinates {{{product_coords}}};
-\\addlegendentry{{Product}}
+\\addlegendentry{{Packed64}}
+\\addplot+[{BAR_STYLES[2]}] coordinates {{{tuple_coords}}};
+\\addlegendentry{{Tuple}}
 \\addplot+[{BAR_STYLES[1]}] coordinates {{{dual_coords}}};
 \\addlegendentry{{Dual}}
 \\end{{axis}}
 \\end{{tikzpicture}}
-\\caption{{Measured phase breakdown for the Google DPF write backend at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. Each bar is wall-clock time per report for key generation, evaluation-context construction, full-domain DPF evaluation, and share accumulation.}}
+\\caption{{Measured phase breakdown for Google DPF write backends at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. Packed64 is the optimized single-word encoding; tuple product and dual-track are unoptimized baselines. Each bar is wall-clock time per report for key generation, evaluation-context construction, full-domain DPF evaluation, and share accumulation.}}
 \\label{{fig:dpf-phase-breakdown}}
 \\end{{figure}}
 """
@@ -664,8 +675,8 @@ def generate_all() -> dict[str, int]:
             "y_col": "time_ms_per_report",
             "xlabel": "slot domain $N$",
             "ylabel": "ms per report",
-            "methods": ["Google DPF product-valued", "Google DPF dual-track"],
-            "caption": "Measured Google DPF backend scaling with the hidden-slot domain size. Each point includes DPF key generation, evaluation of both server keys over all slots, accumulation, and reconstruction checks.",
+            "methods": [PACKED_METHOD, TUPLE_METHOD, DUAL_METHOD],
+            "caption": "Measured Google DPF backend scaling with the hidden-slot domain size. Packed64 is the optimized single-word write backend; tuple product and dual-track are unoptimized baselines. Each point includes DPF key generation, evaluation of both server keys over all slots, accumulation, and reconstruction checks.",
             "label": "fig:dpf-scaling",
             "extra_axis": "xmode=log, ymode=log, log basis x=2",
         },
@@ -676,7 +687,7 @@ def generate_all() -> dict[str, int]:
             "y_col": "reports_per_second",
             "xlabel": "slot domain $N$",
             "ylabel": "reports/s",
-            "methods": ["Google DPF product-valued", "Google DPF dual-track"],
+            "methods": [PACKED_METHOD, TUPLE_METHOD, DUAL_METHOD],
             "caption": "Measured single-thread Google DPF backend service rate obtained as the reciprocal of measured wall-clock time per report. The curve isolates the eval-all write backend; it is not a full deployment throughput claim.",
             "label": "fig:dpf-throughput-vs-n",
             "extra_axis": "xmode=log, ymode=log, log basis x=2",
@@ -688,8 +699,8 @@ def generate_all() -> dict[str, int]:
             "y_col": "reports_per_second",
             "xlabel": "worker threads",
             "ylabel": "reports/s",
-            "methods": ["Google DPF product-valued", "Google DPF dual-track"],
-            "caption": "Measured thread scaling of the Google DPF write backend at $N=2^{17}=131072$. Each worker evaluates independent report batches into private accumulators, followed by deterministic share reduction; the CSV records whether the binary was compiled with AES-NI, ARM crypto, or portable code.",
+            "methods": [PACKED_METHOD, TUPLE_METHOD, DUAL_METHOD],
+            "caption": "Measured thread scaling of Google DPF write backends at $N=2^{17}=131072$. Packed64 is the optimized single-word encoding; tuple product and dual-track are unoptimized baselines. Each worker evaluates independent report batches into private accumulators, followed by deterministic share reduction; the CSV records whether the binary was compiled with AES-NI, ARM crypto, or portable code.",
             "label": "fig:dpf-thread-scaling",
             "extra_axis": "xmin=0.8, ymin=0",
         },

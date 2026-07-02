@@ -15,6 +15,9 @@ from chafe_eval_lib import DATA_DIR, ROOT, mean_and_se, read_csv, write_csv
 DEFAULT_DPF_LOG_N = 17
 DEFAULT_DPF_N = 1 << DEFAULT_DPF_LOG_N
 SCALING_LOG_NS = [12, 14, 16, 17, 18]
+PACKED_METHOD = "Google DPF packed64"
+TUPLE_METHOD = "Google DPF tuple product"
+DUAL_METHOD = "Google DPF dual-track"
 
 
 def platform_metadata() -> dict[str, str]:
@@ -116,12 +119,14 @@ def run_google_dpf(args: list[str]) -> list[dict[str, str]]:
 
 
 def enrich_google_summary_row(row: dict[str, str]) -> dict:
+    time_ratio = row.get("time_ratio_vs_packed", row.get("speedup_vs_product", ""))
     return {
         "method": row["method"],
         "time_ms_per_report": float(row["time_ms_per_report"]),
         "standard_error_ms": float(row["standard_error_ms"]),
         "normalized_expansion_work": float(row["normalized_expansion_work"]),
-        "speedup_vs_product": float(row.get("speedup_vs_product", "")),
+        "time_ratio_vs_packed": float(time_ratio),
+        "speedup_vs_product": float(time_ratio),
         "source_type": row["source_type"],
         "benchmark": row["benchmark"],
         "N": int(row["N"]),
@@ -186,7 +191,7 @@ def generate_google_dpf_microbench() -> list[dict] | None:
             f"--seed={40_000 + DEFAULT_DPF_LOG_N}",
         ]
     )
-    if len(rows) != 2:
+    if len(rows) != 3:
         raise RuntimeError(f"unexpected Google DPF benchmark row count: {len(rows)}")
     enriched = [enrich_google_summary_row(row) for row in rows]
     write_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv", enriched)
@@ -207,7 +212,7 @@ def generate_google_dpf_scaling() -> list[dict]:
                 f"--seed={50_000 + log_n}",
             ]
         )
-        if len(raw_rows) != 2:
+        if len(raw_rows) != 3:
             raise RuntimeError(f"unexpected Google DPF scaling row count for log_n={log_n}: {len(raw_rows)}")
         rows.extend(enrich_google_summary_row(row) for row in raw_rows)
     write_csv(DATA_DIR / "fig_dpf_scaling.csv", rows)
@@ -226,6 +231,8 @@ def generate_dpf_throughput_from_scaling(scaling_rows: list[dict] | None = None)
                 "reports_per_second": 1000.0 / time_ms,
                 "time_ms_per_report": time_ms,
                 "standard_error_ms": row["standard_error_ms"],
+                "time_ratio_vs_packed": row.get("time_ratio_vs_packed", row.get("speedup_vs_product", "")),
+                "speedup_vs_product": row.get("speedup_vs_product", ""),
                 "source_type": "microbenchmark",
                 "benchmark": row["benchmark"],
                 "N": row["N"],
@@ -257,10 +264,10 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
     product_rows = [
         row
         for row in scaling_rows
-        if row["method"] == "Google DPF product-valued" and int(float(row["N"])) == DEFAULT_DPF_N
+        if row["method"] == PACKED_METHOD and int(float(row["N"])) == DEFAULT_DPF_N
     ]
     if not product_rows:
-        product_rows = [row for row in scaling_rows if row["method"] == "Google DPF product-valued"]
+        product_rows = [row for row in scaling_rows if row["method"] == PACKED_METHOD]
     service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - DEFAULT_DPF_N))
     service_ms = float(service_row["time_ms_per_report"])
     service_rate = 1000.0 / service_ms
@@ -438,7 +445,7 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
             "batch_gating_seconds": crossover_delay,
             "backlog_growth_reports_per_s": 0.0,
             "stable": "true",
-            "method": "Estimated crossover",
+            "method": "Queue/gate equality",
             "source_type": "analytic_cost",
             "benchmark": "md1_queue_and_batch_gate_intersection",
             "N": int(float(service_row["N"])),
@@ -451,7 +458,7 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
             "delta": "",
             "decoder": "hidden_slot_online_vs_batch_gate",
             "derived_from": "fig_dpf_scaling.csv",
-            "model": "binary search for M/D/1 latency equal to batch gate",
+            "model": "binary search for M/D/1 latency equal to batch-gating lower bound",
         }
     )
     write_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv", rows)
@@ -469,7 +476,7 @@ def generate_google_dpf_phase_breakdown() -> list[dict]:
             f"--seed={60_000 + DEFAULT_DPF_LOG_N}",
         ]
     )
-    if len(raw_rows) != 10:
+    if len(raw_rows) != 15:
         raise RuntimeError(f"unexpected Google DPF breakdown row count: {len(raw_rows)}")
     rows = [enrich_google_breakdown_row(row) for row in raw_rows]
     write_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv", rows)
@@ -498,7 +505,7 @@ def generate_google_dpf_thread_scaling() -> list[dict]:
                 f"--seed={70_000 + threads}",
             ]
         )
-        if len(raw_rows) != 2:
+        if len(raw_rows) != 3:
             raise RuntimeError(f"unexpected Google DPF thread-scaling row count for threads={threads}: {len(raw_rows)}")
         rows.extend(enrich_google_summary_row(row) for row in raw_rows)
 

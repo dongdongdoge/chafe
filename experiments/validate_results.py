@@ -75,7 +75,7 @@ def validate_exact_proxy(notes: list[str]) -> None:
 def validate_microbench(notes: list[str]) -> None:
     rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
     work = {row["method"]: float(row["normalized_expansion_work"]) for row in rows}
-    product_name = "Google DPF product-valued" if "Google DPF product-valued" in work else "Product-valued kernel"
+    product_name = "Google DPF packed64" if "Google DPF packed64" in work else "Product-valued kernel"
     dual_name = "Google DPF dual-track" if "Google DPF dual-track" in work else "Dual-track kernel"
     if work[product_name] > work[dual_name]:
         raise AssertionError("product-valued normalized work exceeds dual-track work")
@@ -85,6 +85,10 @@ def validate_microbench(notes: list[str]) -> None:
         if float(row["time_ms_per_report"]) <= 0:
             raise AssertionError("microbenchmark time must be positive")
     if rows[0].get("benchmark") == "google_distributed_point_functions":
+        methods = {row["method"] for row in rows}
+        expected_methods = {"Google DPF packed64", "Google DPF tuple product", "Google DPF dual-track"}
+        if methods != expected_methods:
+            raise AssertionError(f"unexpected Google DPF methods: {methods}")
         main_ns = {int(float(row["N"])) for row in rows}
         if min(main_ns) < 100_000:
             raise AssertionError(f"main Google DPF microbenchmark must use N>=100000, saw {sorted(main_ns)}")
@@ -103,8 +107,8 @@ def validate_microbench(notes: list[str]) -> None:
                 raise AssertionError("DPF scaling time must be positive")
             scaling_by_n[row["N"]].append(row)
         for n, n_rows in scaling_by_n.items():
-            if len(n_rows) != 2:
-                raise AssertionError(f"DPF scaling expected two rows at N={n}")
+            if len(n_rows) != 3:
+                raise AssertionError(f"DPF scaling expected three rows at N={n}")
             if len({row["checksum"] for row in n_rows}) != 1:
                 raise AssertionError(f"Google DPF scaling reconstructions disagree at N={n}")
         breakdown_rows = read_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv")
@@ -137,8 +141,8 @@ def validate_microbench(notes: list[str]) -> None:
                 raise AssertionError("DPF thread-scaling speedup must be positive")
             thread_by_count[row["threads"]].append(row)
         for threads, t_rows in thread_by_count.items():
-            if len(t_rows) != 2:
-                raise AssertionError(f"DPF thread scaling expected two rows at threads={threads}")
+            if len(t_rows) != 3:
+                raise AssertionError(f"DPF thread scaling expected three rows at threads={threads}")
             if len({row["checksum"] for row in t_rows}) != 1:
                 raise AssertionError(f"Google DPF thread-scaling reconstructions disagree at threads={threads}")
         latency_rows = read_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv")

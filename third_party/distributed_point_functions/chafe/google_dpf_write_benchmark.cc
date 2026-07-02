@@ -78,6 +78,14 @@ struct WorkerState {
   RunResult result;
 };
 
+struct PackedWorkerState {
+  explicit PackedWorkerState(size_t n) : packed0(n, 0), packed1(n, 0) {}
+
+  std::vector<uint64_t> packed0;
+  std::vector<uint64_t> packed1;
+  RunResult result;
+};
+
 struct DetailedTimingSummary {
   TimingSummary total;
   TimingSummary keygen;
@@ -86,6 +94,9 @@ struct DetailedTimingSummary {
   TimingSummary accumulate;
   double key_bytes_per_report = 0.0;
 };
+
+constexpr int kCountBits = 8;
+constexpr uint64_t kCountMask = (uint64_t{1} << kCountBits) - 1;
 
 template <typename T>
 T Unwrap(absl::StatusOr<T> value, const std::string& context) {
@@ -213,6 +224,27 @@ uint64_t Checksum(const std::vector<uint32_t>& occ, const std::vector<uint64_t>&
   return out;
 }
 
+uint64_t PackWrite(uint64_t payload) {
+  return (payload << kCountBits) | uint64_t{1};
+}
+
+uint32_t PackedCount(uint64_t packed) {
+  return static_cast<uint32_t>(packed & kCountMask);
+}
+
+uint64_t PackedPayload(uint64_t packed) {
+  return packed >> kCountBits;
+}
+
+uint64_t ChecksumPacked(const std::vector<uint64_t>& packed) {
+  uint64_t out = 0;
+  for (size_t i = 0; i < packed.size(); ++i) {
+    out ^= (static_cast<uint64_t>(PackedCount(packed[i])) << 32) ^
+           PackedPayload(packed[i]) ^ static_cast<uint64_t>(i);
+  }
+  return out;
+}
+
 int WorkerCount(const Config& cfg) {
   return std::max(1, std::min(cfg.threads, cfg.reports));
 }
@@ -252,6 +284,108 @@ void Verify(const Inputs& inputs, const std::vector<uint32_t>& occ,
       std::exit(3);
     }
   }
+}
+
+void VerifyPacked(const Inputs& inputs, const std::vector<uint64_t>& packed) {
+  std::vector<uint32_t> expected_occ(packed.size(), 0);
+  std::vector<uint64_t> expected_pay(packed.size(), 0);
+  for (size_t i = 0; i < inputs.slots.size(); ++i) {
+    const uint64_t slot = inputs.slots[i];
+    expected_occ[slot] += 1;
+    expected_pay[slot] += inputs.payloads[i];
+  }
+  for (size_t i = 0; i < packed.size(); ++i) {
+    const uint32_t occ = PackedCount(packed[i]);
+    const uint64_t pay = PackedPayload(packed[i]);
+    if (occ != expected_occ[i] || pay != expected_pay[i]) {
+      std::cerr << "packed reconstruction mismatch at slot " << i
+                << ": got (" << occ << ", " << pay << ") expected ("
+                << expected_occ[i] << ", " << expected_pay[i] << ")\n";
+      std::exit(3);
+    }
+  }
+}
+
+void RunPackedRange(const Config& cfg, const Inputs& inputs, int begin, int end,
+                    PackedWorkerState* state) {
+  auto dpf = CreateIntegerDpf<uint64_t>(cfg.log_n);
+
+  for (int report = begin; report < end; ++report) {
+    const auto keygen_start = std::chrono::steady_clock::now();
+    auto keys = Unwrap(
+        dpf->GenerateKeys(absl::uint128(inputs.slots[report]),
+                          PackWrite(inputs.payloads[report])),
+        "Generate packed64 keys");
+    const auto keygen_end = std::chrono::steady_clock::now();
+    state->result.keygen_seconds +=
+        std::chrono::duration<double>(keygen_end - keygen_start).count();
+    state->result.key_bytes += keys.first.ByteSizeLong() + keys.second.ByteSizeLong();
+
+    const auto context_start = std::chrono::steady_clock::now();
+    EvaluationContext ctx0 =
+        Unwrap(dpf->CreateEvaluationContext(keys.first), "Create packed64 ctx0");
+    EvaluationContext ctx1 =
+        Unwrap(dpf->CreateEvaluationContext(keys.second), "Create packed64 ctx1");
+    const auto context_end = std::chrono::steady_clock::now();
+    state->result.context_seconds +=
+        std::chrono::duration<double>(context_end - context_start).count();
+
+    const auto eval_start = std::chrono::steady_clock::now();
+    auto share0 = Unwrap(dpf->EvaluateNext<uint64_t>({}, ctx0),
+                         "Evaluate packed64 server 0");
+    auto share1 = Unwrap(dpf->EvaluateNext<uint64_t>({}, ctx1),
+                         "Evaluate packed64 server 1");
+    const auto eval_end = std::chrono::steady_clock::now();
+    state->result.eval_seconds += std::chrono::duration<double>(eval_end - eval_start).count();
+
+    const auto accumulate_start = std::chrono::steady_clock::now();
+    const size_t n = state->packed0.size();
+    for (size_t i = 0; i < n; ++i) {
+      state->packed0[i] += share0[i];
+      state->packed1[i] += share1[i];
+    }
+    const auto accumulate_end = std::chrono::steady_clock::now();
+    state->result.accumulate_seconds +=
+        std::chrono::duration<double>(accumulate_end - accumulate_start).count();
+  }
+}
+
+RunResult RunPackedOnce(const Config& cfg, const Inputs& inputs) {
+  const size_t n = size_t{1} << cfg.log_n;
+  const int workers = WorkerCount(cfg);
+  std::vector<std::unique_ptr<PackedWorkerState>> states;
+  states.reserve(workers);
+  for (int worker = 0; worker < workers; ++worker) {
+    states.push_back(std::make_unique<PackedWorkerState>(n));
+  }
+
+  if (workers == 1) {
+    RunPackedRange(cfg, inputs, 0, cfg.reports, states[0].get());
+  } else {
+    std::vector<std::thread> pool;
+    pool.reserve(workers);
+    for (int worker = 0; worker < workers; ++worker) {
+      const int begin = worker * cfg.reports / workers;
+      const int end = (worker + 1) * cfg.reports / workers;
+      pool.emplace_back(
+          [&, worker, begin, end]() { RunPackedRange(cfg, inputs, begin, end, states[worker].get()); });
+    }
+    for (std::thread& thread : pool) {
+      thread.join();
+    }
+  }
+
+  std::vector<uint64_t> packed(n, 0);
+  RunResult result;
+  for (const auto& state : states) {
+    AddTiming(result, state->result);
+    for (size_t i = 0; i < n; ++i) {
+      packed[i] += state->packed0[i] + state->packed1[i];
+    }
+  }
+  VerifyPacked(inputs, packed);
+  result.checksum = ChecksumPacked(packed);
+  return result;
 }
 
 void RunProductRange(const Config& cfg, const Inputs& inputs, int begin, int end,
@@ -480,14 +614,14 @@ DetailedTimingSummary TimeMode(const Config& cfg, Fn fn) {
 }
 
 void PrintRow(const std::string& method, const TimingSummary& summary,
-              double normalized_work, double speedup_vs_product,
+              double normalized_work, double time_ratio_vs_packed,
               const Config& cfg) {
   const uint64_t n = uint64_t{1} << cfg.log_n;
   std::cout << method << ","
             << summary.mean_seconds_per_report * 1000.0 << ","
             << summary.se_seconds_per_report * 1000.0 << ","
             << normalized_work << ","
-            << speedup_vs_product << ","
+            << time_ratio_vs_packed << ","
             << "microbenchmark,"
             << "google_distributed_point_functions,"
             << n << ","
@@ -524,25 +658,38 @@ void PrintBreakdownRow(const std::string& method, const std::string& phase,
 
 int main(int argc, char** argv) {
   const Config cfg = ParseArgs(argc, argv);
-  const DetailedTimingSummary product = TimeMode(cfg, RunProductOnce);
+  const DetailedTimingSummary packed = TimeMode(cfg, RunPackedOnce);
+  const DetailedTimingSummary tuple = TimeMode(cfg, RunProductOnce);
   const DetailedTimingSummary dual = TimeMode(cfg, RunDualOnce);
-  const double speedup =
-      dual.total.mean_seconds_per_report / product.total.mean_seconds_per_report;
+  const double tuple_ratio =
+      tuple.total.mean_seconds_per_report / packed.total.mean_seconds_per_report;
+  const double dual_ratio =
+      dual.total.mean_seconds_per_report / packed.total.mean_seconds_per_report;
 
   if (cfg.breakdown) {
     std::cout << "method,phase,time_ms_per_report,standard_error_ms,"
                  "key_bytes_per_report,normalized_expansion_work,source_type,"
                  "benchmark,N,log_n,reports_per_repeat,repeats,threads,cpu_acceleration,checksum\n";
-    PrintBreakdownRow("Google DPF product-valued", "total", product.total,
-                      product.key_bytes_per_report, 1.0, cfg);
-    PrintBreakdownRow("Google DPF product-valued", "keygen", product.keygen,
-                      product.key_bytes_per_report, 1.0, cfg);
-    PrintBreakdownRow("Google DPF product-valued", "context", product.context,
-                      product.key_bytes_per_report, 1.0, cfg);
-    PrintBreakdownRow("Google DPF product-valued", "eval", product.eval,
-                      product.key_bytes_per_report, 1.0, cfg);
-    PrintBreakdownRow("Google DPF product-valued", "accumulate", product.accumulate,
-                      product.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF packed64", "total", packed.total,
+                      packed.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF packed64", "keygen", packed.keygen,
+                      packed.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF packed64", "context", packed.context,
+                      packed.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF packed64", "eval", packed.eval,
+                      packed.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF packed64", "accumulate", packed.accumulate,
+                      packed.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF tuple product", "total", tuple.total,
+                      tuple.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF tuple product", "keygen", tuple.keygen,
+                      tuple.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF tuple product", "context", tuple.context,
+                      tuple.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF tuple product", "eval", tuple.eval,
+                      tuple.key_bytes_per_report, 1.0, cfg);
+    PrintBreakdownRow("Google DPF tuple product", "accumulate", tuple.accumulate,
+                      tuple.key_bytes_per_report, 1.0, cfg);
     PrintBreakdownRow("Google DPF dual-track", "total", dual.total,
                       dual.key_bytes_per_report, 2.0, cfg);
     PrintBreakdownRow("Google DPF dual-track", "keygen", dual.keygen,
@@ -557,9 +704,10 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "method,time_ms_per_report,standard_error_ms,"
-               "normalized_expansion_work,speedup_vs_product,source_type,"
+               "normalized_expansion_work,time_ratio_vs_packed,source_type,"
                "benchmark,N,log_n,reports_per_repeat,repeats,threads,cpu_acceleration,checksum\n";
-  PrintRow("Google DPF product-valued", product.total, 1.0, 1.0, cfg);
-  PrintRow("Google DPF dual-track", dual.total, 2.0, speedup, cfg);
+  PrintRow("Google DPF packed64", packed.total, 1.0, 1.0, cfg);
+  PrintRow("Google DPF tuple product", tuple.total, 1.0, tuple_ratio, cfg);
+  PrintRow("Google DPF dual-track", dual.total, 2.0, dual_ratio, cfg);
   return 0;
 }
