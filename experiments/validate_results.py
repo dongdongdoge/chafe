@@ -112,6 +112,25 @@ def validate_microbench(notes: list[str]) -> None:
                 raise AssertionError("DPF breakdown time must be nonnegative")
             if float(row["key_bytes_per_report"]) <= 0:
                 raise AssertionError("DPF key bytes must be positive")
+        throughput_rows = read_csv(DATA_DIR / "fig_dpf_throughput_vs_n.csv")
+        for row in throughput_rows:
+            if row["source_type"] != "microbenchmark":
+                raise AssertionError("DPF throughput row has wrong source_type")
+            if float(row["reports_per_second"]) <= 0:
+                raise AssertionError("DPF throughput must be positive")
+        latency_rows = read_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv")
+        for row in latency_rows:
+            if row["source_type"] != "analytic_cost":
+                raise AssertionError("ingestion latency row has wrong source_type")
+            if row["method"] == "Chafe online DPF service" and row["stable"] == "false":
+                if float(row["backlog_growth_reports_per_s"]) <= 0:
+                    raise AssertionError("unstable Chafe rows must report positive backlog growth")
+            if row["method"] == "Chafe online DPF service" and row["stable"] == "true":
+                if float(row["avg_latency_seconds"]) <= 0:
+                    raise AssertionError("stable Chafe latency must be positive")
+            if row["method"] == "Collect-then-shuffle gate":
+                if float(row["avg_latency_seconds"]) <= 0:
+                    raise AssertionError("batch-gating latency must be positive")
         notes.append("Google DPF backend timing and reconstruction checks passed.")
         return
     notes.append("Microbenchmark normalized-work and timing checks passed.")
@@ -122,6 +141,7 @@ def validate_source_types(notes: list[str]) -> None:
         "fig_privacy_vs_rho.csv": {"formula"},
         "fig_privacy_vs_eps0.csv": {"formula"},
         "fig_privacy_vs_tau.csv": {"formula"},
+        "fig_privacy_surface_rho_tau.csv": {"formula"},
         "fig_exact_vs_proxy_drop.csv": {"formula", "exact_accountant"},
         "fig_collision_regimes.csv": {"formula"},
         "fig_utility_factors.csv": {"formula"},
@@ -130,6 +150,8 @@ def validate_source_types(notes: list[str]) -> None:
         "fig_product_vs_dual_microbench.csv": {"microbenchmark"},
         "fig_dpf_scaling.csv": {"microbenchmark"},
         "fig_dpf_phase_breakdown.csv": {"microbenchmark"},
+        "fig_dpf_throughput_vs_n.csv": {"microbenchmark"},
+        "fig_ingestion_latency_vs_rate.csv": {"analytic_cost"},
         "fig_range_error_vs_epsilon.csv": {"monte_carlo"},
         "fig_sum_error_vs_epsilon.csv": {"monte_carlo"},
         "fig_heavyhitter_f1_vs_epsilon.csv": {"monte_carlo"},
@@ -138,6 +160,9 @@ def validate_source_types(notes: list[str]) -> None:
         "fig_real_age_range_error_vs_epsilon.csv": {"monte_carlo"},
         "fig_real_hours_sum_error_vs_epsilon.csv": {"monte_carlo"},
         "fig_real_heavyhitter_f1_vs_epsilon.csv": {"monte_carlo"},
+        "fig_range_error_zipf_adult.csv": {"monte_carlo"},
+        "fig_sum_error_zipf_adult.csv": {"monte_carlo"},
+        "fig_heavyhitter_f1_zipf_adult.csv": {"monte_carlo"},
     }
     for filename, allowed in expected.items():
         rows = read_csv(DATA_DIR / filename)
@@ -157,6 +182,9 @@ def validate_monte_carlo_replicates(notes: list[str]) -> None:
         "fig_real_age_range_error_vs_epsilon.csv",
         "fig_real_hours_sum_error_vs_epsilon.csv",
         "fig_real_heavyhitter_f1_vs_epsilon.csv",
+        "fig_range_error_zipf_adult.csv",
+        "fig_sum_error_zipf_adult.csv",
+        "fig_heavyhitter_f1_zipf_adult.csv",
     ]
     for filename in filenames:
         for row in read_csv(DATA_DIR / filename):

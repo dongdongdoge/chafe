@@ -17,13 +17,13 @@ from chafe_eval_lib import (
 
 EPS0_GRID = [0.5, 1.0, 2.0, 4.0]
 SEEDS = list(range(30))
-SAMPLE_M = 5_000
-K = 256
+SAMPLE_M = 100_000
+K = 1024
 RHO = 1.0
 TAU = 2.0
 DELTA = 1e-6
 RANGE_QUERIES = 1_000
-MIN_RANGE_COUNT = 25.0
+MIN_RANGE_COUNT = 100.0
 
 
 def release_length() -> int:

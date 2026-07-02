@@ -18,14 +18,14 @@ from chafe_eval_lib import (
 
 EPS_PRIME_GRID = [0.02, 0.04, 0.08, 0.16, 0.32]
 SEEDS = list(range(30))
-M = 5_000
-K = 256
+M = 100_000
+K = 1024
 RHO = 1.0
 TAU = 2.0
 DELTA = 1e-6
 RANGE_QUERIES = 1_000
 TOP_K = 50
-MIN_RANGE_COUNT = 25.0
+MIN_RANGE_COUNT = 100.0
 
 
 def release_length() -> int:

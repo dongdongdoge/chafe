@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from chafe_eval_lib import DATA_DIR, ROOT, mean_and_se, write_csv
+from chafe_eval_lib import DATA_DIR, ROOT, mean_and_se, read_csv, write_csv
 
 
 def platform_metadata() -> dict[str, str]:
@@ -176,12 +176,136 @@ def generate_google_dpf_microbench() -> list[dict] | None:
 
 def generate_google_dpf_scaling() -> list[dict]:
     rows: list[dict] = []
-    for log_n in [8, 10, 12, 14]:
-        raw_rows = run_google_dpf([f"--log_n={log_n}", "--reports=8", "--repeats=5", f"--seed={50_000 + log_n}"])
+    for log_n in [8, 10, 12, 14, 16]:
+        reports = 8 if log_n <= 14 else 4
+        repeats = 5 if log_n <= 14 else 3
+        raw_rows = run_google_dpf(
+            [
+                f"--log_n={log_n}",
+                f"--reports={reports}",
+                f"--repeats={repeats}",
+                f"--seed={50_000 + log_n}",
+            ]
+        )
         if len(raw_rows) != 2:
             raise RuntimeError(f"unexpected Google DPF scaling row count for log_n={log_n}: {len(raw_rows)}")
         rows.extend(enrich_google_summary_row(row) for row in raw_rows)
     write_csv(DATA_DIR / "fig_dpf_scaling.csv", rows)
+    return rows
+
+
+def generate_dpf_throughput_from_scaling(scaling_rows: list[dict] | None = None) -> list[dict]:
+    if scaling_rows is None:
+        scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+    rows: list[dict] = []
+    for row in scaling_rows:
+        time_ms = float(row["time_ms_per_report"])
+        rows.append(
+            {
+                "method": row["method"],
+                "reports_per_second": 1000.0 / time_ms,
+                "time_ms_per_report": time_ms,
+                "standard_error_ms": row["standard_error_ms"],
+                "source_type": "microbenchmark",
+                "benchmark": row["benchmark"],
+                "N": row["N"],
+                "log_n": row["log_n"],
+                "reports_per_repeat": row["reports_per_repeat"],
+                "repeats": row["repeats"],
+                "m": "",
+                "rho": "",
+                "M": "",
+                "tau": "",
+                "eps0": "",
+                "delta": "",
+                "decoder": "google_dpf_ingestion_kernel",
+                "derived_from": "fig_dpf_scaling.csv",
+                "model": "reciprocal_of_measured_time",
+                "build_target": row["build_target"],
+                **platform_metadata(),
+            }
+        )
+    write_csv(DATA_DIR / "fig_dpf_throughput_vs_n.csv", rows)
+    return rows
+
+
+def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> list[dict]:
+    if scaling_rows is None:
+        scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+    product_rows = [
+        row for row in scaling_rows if row["method"] == "Google DPF product-valued" and int(float(row["N"])) == 4096
+    ]
+    if not product_rows:
+        product_rows = [row for row in scaling_rows if row["method"] == "Google DPF product-valued"]
+    service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - 4096))
+    service_ms = float(service_row["time_ms_per_report"])
+    service_rate = 1000.0 / service_ms
+    epoch_m = 1_000_000
+    arrival_rates = [1, 2, 5, 10, 20, 40, 60, 80, 90, 100, 200, 500, 1_000, 5_000, 20_000]
+    rows: list[dict] = []
+    for arrival_rate in arrival_rates:
+        utilization = arrival_rate / service_rate
+        stable = utilization < 1.0
+        if stable:
+            service_seconds = service_ms / 1000.0
+            queue_seconds = arrival_rate * service_seconds * service_seconds / (2.0 * (1.0 - utilization))
+            chafe_latency = service_seconds + queue_seconds
+            backlog = 0.0
+        else:
+            chafe_latency = ""
+            backlog = arrival_rate - service_rate
+        rows.append(
+            {
+                "arrival_rate_reports_per_s": arrival_rate,
+                "service_rate_reports_per_s": service_rate,
+                "utilization": utilization,
+                "avg_latency_seconds": chafe_latency,
+                "batch_gating_seconds": 0.0,
+                "backlog_growth_reports_per_s": backlog,
+                "stable": str(stable).lower(),
+                "method": "Chafe online DPF service",
+                "source_type": "analytic_cost",
+                "benchmark": "md1_queue_from_measured_google_dpf",
+                "N": int(float(service_row["N"])),
+                "log_n": service_row["log_n"],
+                "m": epoch_m,
+                "rho": "",
+                "M": "",
+                "tau": "",
+                "eps0": "",
+                "delta": "",
+                "decoder": "hidden_slot_online",
+                "derived_from": "fig_dpf_scaling.csv",
+                "model": "M/D/1 mean sojourn time; unstable rows record backlog growth",
+            }
+        )
+        batch_delay = (epoch_m - 1.0) / (2.0 * arrival_rate)
+        rows.append(
+            {
+                "arrival_rate_reports_per_s": arrival_rate,
+                "service_rate_reports_per_s": "",
+                "utilization": "",
+                "avg_latency_seconds": batch_delay,
+                "batch_gating_seconds": batch_delay,
+                "backlog_growth_reports_per_s": 0.0,
+                "stable": "true",
+                "method": "Collect-then-shuffle gate",
+                "source_type": "analytic_cost",
+                "benchmark": "batch_gating_wait",
+                "N": "",
+                "log_n": "",
+                "m": epoch_m,
+                "rho": "",
+                "M": "",
+                "tau": "",
+                "eps0": "",
+                "delta": "",
+                "decoder": "batch_gate",
+                "derived_from": "closed_form_waiting_time",
+                "model": "(m-1)/(2 lambda)",
+            }
+        )
+    write_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv", rows)
     return rows
 
 
@@ -264,8 +388,12 @@ def generate_all() -> dict[str, int]:
     if google_dpf_binary().exists():
         scaling_rows = generate_google_dpf_scaling()
         breakdown_rows = generate_google_dpf_phase_breakdown()
+        throughput_rows = generate_dpf_throughput_from_scaling(scaling_rows)
+        latency_rows = generate_ingestion_latency_model(scaling_rows)
         outputs["fig_dpf_scaling.csv"] = len(scaling_rows)
         outputs["fig_dpf_phase_breakdown.csv"] = len(breakdown_rows)
+        outputs["fig_dpf_throughput_vs_n.csv"] = len(throughput_rows)
+        outputs["fig_ingestion_latency_vs_rate.csv"] = len(latency_rows)
     return outputs
 
 

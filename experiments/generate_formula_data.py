@@ -14,11 +14,14 @@ from chafe_eval_lib import (
 )
 
 
-DEFAULT_M = 100_000
+DEFAULT_M = 1_000_000
 DEFAULT_EPS0 = 1.0
 DEFAULT_DELTA = 1e-6
 DEFAULT_TAU = 2.0
 DEFAULT_RHO = 1.0
+RHO_GRID = np.linspace(0.05, 3.0, 60)
+TAU_GRID = np.linspace(1.0, 8.0, 57)
+EPS0_GRID = np.linspace(0.1, 5.0, 50)
 
 
 def ceil_slots(m: int, rho: float) -> int:
@@ -66,7 +69,7 @@ def generate_privacy_vs_rho() -> list[dict]:
     delta = DEFAULT_DELTA
     tau = DEFAULT_TAU
     M = ceil_release(m, tau)
-    for rho in np.linspace(0.1, 2.0, 39):
+    for rho in RHO_GRID:
         rho = float(rho)
         rows.append(
             base_row(
@@ -135,7 +138,7 @@ def generate_privacy_vs_eps0() -> list[dict]:
     tau = DEFAULT_TAU
     delta = DEFAULT_DELTA
     M = ceil_release(m, tau)
-    for eps0 in np.linspace(0.1, 5.0, 50):
+    for eps0 in EPS0_GRID:
         eps0 = float(eps0)
         rows.append(
             base_row(
@@ -189,7 +192,7 @@ def generate_privacy_vs_tau() -> list[dict]:
     rho = DEFAULT_RHO
     eps0 = DEFAULT_EPS0
     delta = DEFAULT_DELTA
-    for tau in np.linspace(1.0, 5.0, 41):
+    for tau in TAU_GRID:
         tau = float(tau)
         M = ceil_release(m, tau)
         rows.append(
@@ -240,7 +243,7 @@ def generate_privacy_vs_tau() -> list[dict]:
 
 def generate_collision_regimes() -> list[dict]:
     rows: list[dict] = []
-    for rho in np.linspace(0.1, 2.0, 39):
+    for rho in RHO_GRID:
         rho = float(rho)
         singleton = math.exp(-rho)
         pair = rho * math.exp(-rho)
@@ -272,7 +275,7 @@ def generate_collision_regimes() -> list[dict]:
 
 def generate_utility_factors() -> list[dict]:
     rows: list[dict] = []
-    for rho in np.linspace(0.1, 2.0, 39):
+    for rho in RHO_GRID:
         rho = float(rho)
         for method, factor, decoder in [
             ("Drop retained mass", math.exp(-rho), "drop"),
@@ -306,7 +309,7 @@ def generate_frontier() -> list[dict]:
     delta = DEFAULT_DELTA
     tau = DEFAULT_TAU
     M = ceil_release(m, tau)
-    for rho in np.linspace(0.1, 2.0, 39):
+    for rho in RHO_GRID:
         rho = float(rho)
         rows.append(
             {
@@ -349,7 +352,7 @@ def generate_frontier() -> list[dict]:
 def generate_batch_gating_delay() -> list[dict]:
     rows: list[dict] = []
     arrival_rate = 20_000.0
-    for m in [1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000]:
+    for m in [1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000]:
         collect_delay = (m - 1.0) / (2.0 * arrival_rate)
         rows.append(
             {
@@ -389,6 +392,48 @@ def generate_batch_gating_delay() -> list[dict]:
     return rows
 
 
+def generate_privacy_surface_rho_tau() -> list[dict]:
+    rows: list[dict] = []
+    m = DEFAULT_M
+    eps0 = DEFAULT_EPS0
+    delta = DEFAULT_DELTA
+    for tau in TAU_GRID:
+        tau = float(tau)
+        M = ceil_release(m, tau)
+        for rho in RHO_GRID:
+            rho = float(rho)
+            rows.append(
+                base_row(
+                    method="Drop (matched padding)",
+                    epsilon=eps_drop_proxy(eps0, rho, M, delta),
+                    source_type="formula",
+                    m=m,
+                    rho=rho,
+                    tau=tau,
+                    eps0=eps0,
+                    delta=delta,
+                    decoder="drop",
+                    bound="second_order_matched_drop_surface",
+                )
+            )
+            rows.append(
+                base_row(
+                    method="Pool (replacement)",
+                    epsilon=eps_pool_replacement(eps0, rho, M, delta),
+                    source_type="formula",
+                    m=m,
+                    rho=rho,
+                    tau=tau,
+                    eps0=eps0,
+                    delta=delta,
+                    decoder="pool",
+                    bound="second_order_replacement_surface",
+                )
+            )
+    write_csv(DATA_DIR / "fig_privacy_surface_rho_tau.csv", rows)
+    return rows
+
+
 def generate_all() -> dict[str, int]:
     generated = {
         "fig_privacy_vs_rho.csv": len(generate_privacy_vs_rho()),
@@ -398,6 +443,7 @@ def generate_all() -> dict[str, int]:
         "fig_utility_factors.csv": len(generate_utility_factors()),
         "fig_privacy_utility_frontier.csv": len(generate_frontier()),
         "fig_batch_gating_delay.csv": len(generate_batch_gating_delay()),
+        "fig_privacy_surface_rho_tau.csv": len(generate_privacy_surface_rho_tau()),
     }
     return generated
 

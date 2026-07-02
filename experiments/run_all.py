@@ -15,6 +15,7 @@ import microbench
 import real_data_utility
 import utility_simulations
 import validate_results
+import compose_workload_comparisons
 
 
 def closest(rows: list[dict[str, str]], key: str, value: float, method: str | None = None) -> dict[str, str]:
@@ -35,6 +36,8 @@ def summarize_outputs() -> str:
     sum_rows = read_csv(DATA_DIR / "fig_sum_error_vs_epsilon.csv")
     f1_rows = read_csv(DATA_DIR / "fig_heavyhitter_f1_vs_epsilon.csv")
     scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+    throughput_rows = read_csv(DATA_DIR / "fig_dpf_throughput_vs_n.csv")
+    latency_rows = read_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv")
     phase_rows = read_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv")
     fixed_range_rows = read_csv(DATA_DIR / "fig_fixed_eps0_range_error.csv")
     fixed_sum_rows = read_csv(DATA_DIR / "fig_fixed_eps0_sum_error.csv")
@@ -53,7 +56,7 @@ def summarize_outputs() -> str:
         row for row in micro_rows if row["method"] in ("Google DPF product-valued", "Product-valued kernel")
     )
     dual = next(row for row in micro_rows if row["method"] in ("Google DPF dual-track", "Dual-track kernel"))
-    delay_100k = closest(delay_rows, "m", 100_000, "Collect-then-shuffle")
+    delay_1m = closest(delay_rows, "m", 1_000_000, "Collect-then-shuffle")
     range_drop_016 = closest(range_rows, "epsilon_prime", 0.16, "Drop")
     range_ideal_016 = closest(range_rows, "epsilon_prime", 0.16, "IdealShuffle")
     sum_pool_016 = closest(sum_rows, "epsilon_prime", 0.16, "Pool")
@@ -61,7 +64,10 @@ def summarize_outputs() -> str:
     f1_drop_032 = closest(f1_rows, "epsilon_prime", 0.32, "Drop")
     f1_ideal_032 = closest(f1_rows, "epsilon_prime", 0.32, "IdealShuffle")
     product_small = closest(scaling_rows, "N", 256, "Google DPF product-valued")
-    product_large = closest(scaling_rows, "N", 16_384, "Google DPF product-valued")
+    product_large = closest(scaling_rows, "N", 65_536, "Google DPF product-valued")
+    throughput_4096 = closest(throughput_rows, "N", 4_096, "Google DPF product-valued")
+    chafe_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Chafe online DPF service")
+    batch_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Collect-then-shuffle gate")
     phase_eval_product = next(
         row for row in phase_rows if row["method"] == "Google DPF product-valued" and row["phase"] == "eval"
     )
@@ -84,7 +90,7 @@ def summarize_outputs() -> str:
         [
             "Main numerical takeaways:",
             (
-                f"- At rho=1, eps0=1, m=100000, tau=2, delta=1e-6: "
+                f"- At rho=1, eps0=1, m=1000000, tau=2, delta=1e-6: "
                 f"IdealShuffle epsilon'={float(ideal_rho1['epsilon']):.4g}, "
                 f"Drop proxy={float(drop_rho1['epsilon']):.4g}, "
                 f"Pool replacement={float(pool_rho1['epsilon']):.4g}, "
@@ -104,7 +110,7 @@ def summarize_outputs() -> str:
             (
                 f"- Google DPF product-valued scaling: {float(product_small['time_ms_per_report']):.3g} "
                 f"ms/report at N=256 and {float(product_large['time_ms_per_report']):.3g} "
-                f"ms/report at N=16384."
+                f"ms/report at N={int(float(product_large['N']))}."
             ),
             (
                 f"- At N=4096, product-valued DPF evaluation accounts for "
@@ -112,8 +118,15 @@ def summarize_outputs() -> str:
                 f"of measured per-report backend time."
             ),
             (
-                f"- Analytic collect-then-shuffle average wait at m=100000 and lambda=20000/s is "
-                f"{float(delay_100k['delay_seconds']):.3g} s; Chafe online batch-gating wait is 0."
+                f"- The measured product-valued DPF service rate at N=4096 is "
+                f"{float(throughput_4096['reports_per_second']):.3g} reports/s. At arrival rate 40 reports/s, "
+                f"the analytic online service latency is {float(chafe_latency_40['avg_latency_seconds']):.3g} s, "
+                f"while collect-then-shuffle batch gating for m=1e6 is "
+                f"{float(batch_latency_40['avg_latency_seconds']):.3g} s."
+            ),
+            (
+                f"- Analytic collect-then-shuffle average wait at m=1000000 and lambda=20000/s is "
+                f"{float(delay_1m['delay_seconds']):.3g} s; Chafe online batch-gating wait is 0."
             ),
             (
                 f"- Monte Carlo range error at epsilon'=0.16: IdealShuffle "
@@ -175,6 +188,7 @@ def run(skip_utility: bool = False) -> None:
         outputs.update(utility_simulations.generate_all())
         outputs.update(fixed_eps0_utility.generate_all())
         outputs.update(real_data_utility.generate_all())
+        outputs.update(compose_workload_comparisons.generate_all())
     else:
         print("Skipping utility simulations by request; workload figures will not be regenerated.")
     outputs.update(make_figures.generate_all())

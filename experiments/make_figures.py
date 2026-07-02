@@ -34,7 +34,14 @@ def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
 
 
 def coordinates(rows: list[dict[str, str]], x_col: str, y_col: str) -> str:
-    pairs = sorted((float(row[x_col]), float(row[y_col])) for row in rows)
+    pairs = []
+    for row in rows:
+        if row.get(x_col, "") == "" or row.get(y_col, "") == "":
+            continue
+        pairs.append((float(row[x_col]), float(row[y_col])))
+    pairs = sorted(pairs)
+    if not pairs:
+        raise ValueError(f"no numeric coordinates for {x_col}/{y_col}")
     return " ".join(f"({fnum(x)},{fnum(y)})" for x, y in pairs)
 
 
@@ -78,6 +85,136 @@ def line_figure(
 {chr(10).join(plots)}
 \\end{{axis}}
 \\end{{tikzpicture}}
+\\caption{{{caption}}}
+\\label{{{label}}}
+\\end{{figure}}
+"""
+    (FIGURE_DIR / tex_name).write_text(body)
+
+
+def surface_coordinates(rows: list[dict[str, str]], method: str) -> tuple[str, int]:
+    subset = [row for row in rows if row["method"] == method]
+    if not subset:
+        raise ValueError(f"surface has no rows for method {method}")
+    rhos = sorted({float(row["rho"]) for row in subset})
+    taus = sorted({float(row["tau"]) for row in subset})
+    by_key = {(float(row["rho"]), float(row["tau"])): float(row["epsilon"]) for row in subset}
+    lines = []
+    for tau in taus:
+        for rho in rhos:
+            lines.append(f"({fnum(rho)},{fnum(tau)},{fnum(by_key[(rho, tau)])})")
+        lines.append("")
+    return "\n".join(lines), len(taus)
+
+
+def privacy_surface_figure() -> None:
+    rows = read_csv(DATA_DIR / "fig_privacy_surface_rho_tau.csv")
+    panels = []
+    for method, title in [("Drop (matched padding)", "Drop"), ("Pool (replacement)", "Pool replacement")]:
+        coords, mesh_rows = surface_coordinates(rows, method)
+        panels.append(
+            f"""\\begin{{minipage}}{{0.485\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+width=0.47\\textwidth,
+height=4.4cm,
+grid=both,
+grid style={{gray!15}},
+tick label style={{font=\\footnotesize}},
+label style={{font=\\small}},
+title={{{title}}},
+title style={{font=\\small}},
+xlabel={{$\\rho=m/N$}},
+ylabel={{$\\tau=M/m$}},
+zlabel={{$\\epsilon'$}},
+view={{38}}{{24}},
+colormap={{graymap}}{{gray(0cm)=(0.18); gray(1cm)=(0.92)}},
+colorbar=false,
+axis line style={{black!70}},
+tick style={{black!70}}
+]
+\\addplot3[
+surf,
+shader=flat corner,
+draw=black!35,
+mesh/rows={mesh_rows}
+] coordinates {{
+{coords}
+}};
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}"""
+        )
+    body = f"""% Auto-generated from data/fig_privacy_surface_rho_tau.csv.
+\\begin{{figure*}}[t]
+\\centering
+{chr(10).join(panels)}
+\\caption{{Formula-derived large-scale privacy surface over load factor and release expansion for $m=10^6$, $\\epsilon_0=1$, and $\\delta=10^{{-6}}$. The left panel is matched Drop; the right panel is the Pool replacement-style second-order bound.}}
+\\label{{fig:privacy-surface-rho-tau}}
+\\end{{figure*}}
+"""
+    (FIGURE_DIR / "fig_privacy_surface_rho_tau.tex").write_text(body)
+
+
+def paired_coordinates(rows: list[dict[str, str]], panel: str, method: str, x_col: str, y_col: str) -> str:
+    return coordinates(
+        [row for row in rows if row["panel"] == panel and row["method"] == method],
+        x_col,
+        y_col,
+    )
+
+
+def paired_line_figure(
+    *,
+    csv_name: str,
+    tex_name: str,
+    x_col: str,
+    y_col: str,
+    xlabel: str,
+    ylabel: str,
+    methods: list[str],
+    caption: str,
+    label: str,
+    extra_axis: str = "",
+) -> None:
+    rows = read_csv(DATA_DIR / csv_name)
+    panels = []
+    for panel, title in [("Synthetic Zipf", "Zipf"), ("Adult empirical bootstrap", "Adult")]:
+        plots = []
+        for idx, method in enumerate(methods):
+            subset = [row for row in rows if row["panel"] == panel and row["method"] == method]
+            if not subset:
+                continue
+            plots.append(
+                "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
+                + paired_coordinates(rows, panel, method, x_col, y_col)
+                + "};\n"
+                + f"\\addlegendentry{{{method}}}"
+            )
+        axis_extra = (
+            "height=3.05cm, title={" + title + "}, title style={font=\\scriptsize}, "
+            "legend style={font=\\tiny, fill=white, draw=black!20, at={(0.98,0.98)}, anchor=north east}"
+        )
+        if extra_axis:
+            axis_extra += ", " + extra_axis
+        panel_axis_options = axis_options("0.235\\textwidth", xlabel, ylabel, axis_extra)
+        panels.append(
+            f"""\\begin{{minipage}}{{0.238\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{panel_axis_options}
+]
+{chr(10).join(plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}"""
+        )
+    body = f"""% Auto-generated from data/{csv_name}.
+\\begin{{figure}}[t]
+\\centering
+{chr(10).join(panels)}
 \\caption{{{caption}}}
 \\label{{{label}}}
 \\end{{figure}}
@@ -174,7 +311,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "$\\rho=m/N$",
             "ylabel": "$\\epsilon'$",
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)", "Pool (add/remove)"],
-            "caption": "Formula-derived privacy amplification versus load factor for $m=10^5$, $\\tau=2$, $\\epsilon_0=1$, and $\\delta=10^{-6}$. Pool replacement and add/remove curves use their respective second-order bounds.",
+            "caption": "Formula-derived privacy amplification versus load factor for $m=10^6$, $\\tau=2$, $\\epsilon_0=1$, and $\\delta=10^{-6}$. Pool replacement and add/remove curves use their respective second-order bounds.",
             "label": "fig:privacy-vs-rho",
         },
         {
@@ -185,7 +322,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "$\\epsilon_0$",
             "ylabel": "$\\epsilon'$",
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)"],
-            "caption": "Formula-derived privacy amplification as the local privacy parameter varies for $m=10^5$, $\\rho=1$, $\\tau=2$, and $\\delta=10^{-6}$.",
+            "caption": "Formula-derived privacy amplification as the local privacy parameter varies for $m=10^6$, $\\rho=1$, $\\tau=2$, and $\\delta=10^{-6}$.",
             "label": "fig:privacy-vs-eps0",
         },
         {
@@ -196,7 +333,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "$\\tau=M/m$",
             "ylabel": "$\\epsilon'$",
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)"],
-            "caption": "Formula-derived privacy amplification versus matched release expansion $\\tau=M/m$ for $m=10^5$, $\\rho=1$, $\\epsilon_0=1$, and $\\delta=10^{-6}$.",
+            "caption": "Formula-derived privacy amplification versus matched release expansion $\\tau=M/m$ for $m=10^6$, $\\rho=1$, $\\epsilon_0=1$, and $\\delta=10^{-6}$.",
             "label": "fig:privacy-vs-tau",
         },
         {
@@ -240,7 +377,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "normalized utility cost",
             "ylabel": "$\\epsilon'$",
             "methods": ["Drop (matched padding)", "Pool (replacement)"],
-            "caption": "Formula-derived privacy--utility frontier from scanning $\\rho$ for $m=10^5$, $\\tau=2$, $\\epsilon_0=1$, and $\\delta=10^{-6}$. Drop uses utility cost $e^{\\rho/2}$; Pool replacement keeps additive cost at one.",
+            "caption": "Formula-derived privacy--utility frontier from scanning $\\rho$ for $m=10^6$, $\\tau=2$, $\\epsilon_0=1$, and $\\delta=10^{-6}$. Drop uses utility cost $e^{\\rho/2}$; Pool replacement keeps additive cost at one.",
             "label": "fig:privacy-utility-frontier",
             "width": "0.48\\textwidth",
             "extra_axis": "xmin=0.95",
@@ -265,7 +402,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "mean relative error",
             "methods": ["Local", "IdealShuffle", "Drop"],
-            "caption": "Monte Carlo utility simulation for 1,000 random range-count queries over a Zipf histogram ($m=5000$, $k=256$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
+            "caption": "Monte Carlo utility simulation for 1,000 random range-count queries over a Zipf histogram ($m=10^5$, $k=1024$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
             "label": "fig:range-error-vs-epsilon",
             "extra_axis": "ymode=log",
         },
@@ -277,7 +414,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "relative sum error",
             "methods": ["Local", "IdealShuffle", "Drop", "Pool"],
-            "caption": "Monte Carlo utility simulation for bounded sums with Laplace additive reports ($m=5000$, 30 seeds). Pool uses the replacement-style formula to choose $\\epsilon_0$ and preserves additive sums in the simulator.",
+            "caption": "Monte Carlo utility simulation for bounded sums with Laplace additive reports ($m=10^5$, 30 seeds). Pool uses the replacement-style formula to choose $\\epsilon_0$ and preserves additive sums in the simulator.",
             "label": "fig:sum-error-vs-epsilon",
             "extra_axis": "ymode=log",
         },
@@ -289,7 +426,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "top-50 F1",
             "methods": ["Local", "IdealShuffle", "Drop"],
-            "caption": "Monte Carlo utility simulation for top-50 heavy-hitter recovery over a Zipf histogram ($m=5000$, $k=256$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
+            "caption": "Monte Carlo utility simulation for top-50 heavy-hitter recovery over a Zipf histogram ($m=10^5$, $k=1024$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
             "label": "fig:heavyhitter-f1-vs-epsilon",
             "extra_axis": "ymin=0, ymax=1.02",
         },
@@ -304,6 +441,30 @@ def generate_all() -> dict[str, int]:
             "caption": "Measured Google DPF backend scaling with the hidden-slot domain size. Each point includes DPF key generation, evaluation of both server keys over all slots, accumulation, and reconstruction checks.",
             "label": "fig:dpf-scaling",
             "extra_axis": "xmode=log, ymode=log, log basis x=2",
+        },
+        {
+            "csv_name": "fig_dpf_throughput_vs_n.csv",
+            "tex_name": "fig_dpf_throughput_vs_n.tex",
+            "x_col": "N",
+            "y_col": "reports_per_second",
+            "xlabel": "slot domain $N$",
+            "ylabel": "reports/s",
+            "methods": ["Google DPF product-valued", "Google DPF dual-track"],
+            "caption": "Measured single-thread Google DPF backend service rate obtained as the reciprocal of measured wall-clock time per report. The curve isolates the eval-all write backend; it is not a full deployment throughput claim.",
+            "label": "fig:dpf-throughput-vs-n",
+            "extra_axis": "xmode=log, ymode=log, log basis x=2",
+        },
+        {
+            "csv_name": "fig_ingestion_latency_vs_rate.csv",
+            "tex_name": "fig_ingestion_latency_vs_rate.tex",
+            "x_col": "arrival_rate_reports_per_s",
+            "y_col": "avg_latency_seconds",
+            "xlabel": "arrival rate $\\lambda$ (reports/s)",
+            "ylabel": "average latency (s)",
+            "methods": ["Chafe online DPF service", "Collect-then-shuffle gate"],
+            "caption": "Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{12}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. Unstable Chafe rows are retained in the CSV as backlog growth and omitted from the plotted curve.",
+            "label": "fig:ingestion-latency-vs-rate",
+            "extra_axis": "xmode=log, ymode=log",
         },
         {
             "csv_name": "fig_fixed_eps0_range_error.csv",
@@ -337,7 +498,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "mean relative error",
             "methods": ["Local", "IdealShuffle", "Drop"],
-            "caption": "Monte Carlo utility simulation on the UCI Adult dataset for age range-count queries ($m=5000$, 30 seeds). Points plot thresholded mean relative error; standard errors and dataset provenance are saved in the CSV.",
+            "caption": "Monte Carlo utility simulation on an empirical bootstrap from the UCI Adult dataset for age range-count queries ($m=10^5$, 30 seeds). Points plot thresholded mean relative error; standard errors and dataset provenance are saved in the CSV.",
             "label": "fig:real-age-range-error-vs-epsilon",
             "extra_axis": "ymode=log",
         },
@@ -349,7 +510,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "relative sum error",
             "methods": ["Local", "IdealShuffle", "Drop", "Pool"],
-            "caption": "Monte Carlo utility simulation on the UCI Adult dataset for the sum of bounded hours-per-week values ($m=5000$, 30 seeds). The additive Laplace report is a utility model, not a pure-LDP claim.",
+            "caption": "Monte Carlo utility simulation on an empirical bootstrap from the UCI Adult dataset for the sum of bounded hours-per-week values ($m=10^5$, 30 seeds). The additive Laplace report is a utility model, not a pure-LDP claim.",
             "label": "fig:real-hours-sum-error-vs-epsilon",
             "extra_axis": "ymode=log",
         },
@@ -361,7 +522,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "target $\\epsilon'$",
             "ylabel": "top-50 F1",
             "methods": ["Local", "IdealShuffle", "Drop"],
-            "caption": "Monte Carlo utility simulation on the UCI Adult dataset for top-50 heavy hitters over occupation--education categories ($m=5000$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
+            "caption": "Monte Carlo utility simulation on an empirical bootstrap from the UCI Adult dataset for top-50 heavy hitters over occupation--education categories ($m=10^5$, 30 seeds). Points plot means; standard errors are saved in the CSV.",
             "label": "fig:real-heavyhitter-f1-vs-epsilon",
             "extra_axis": "ymin=0, ymax=1.02",
         },
@@ -370,6 +531,47 @@ def generate_all() -> dict[str, int]:
     for spec in figure_specs:
         line_figure(**spec)
         count += 1
+    privacy_surface_figure()
+    count += 1
+    paired_line_figure(
+        csv_name="fig_range_error_zipf_adult.csv",
+        tex_name="fig_range_error_zipf_adult.tex",
+        x_col="epsilon_prime",
+        y_col="mean_relative_error",
+        xlabel="$\\epsilon'$",
+        ylabel="rel. error",
+        methods=["Local", "IdealShuffle", "Drop"],
+        caption="Side-by-side Monte Carlo range-count utility at $m=10^5$: synthetic Zipf histogram (left) and Adult empirical bootstrap age ranges (right). Each curve plots means over 30 seeds; standard errors remain in the CSV.",
+        label="fig:range-error-zipf-adult",
+        extra_axis="ymode=log",
+    )
+    count += 1
+    paired_line_figure(
+        csv_name="fig_sum_error_zipf_adult.csv",
+        tex_name="fig_sum_error_zipf_adult.tex",
+        x_col="epsilon_prime",
+        y_col="mean_relative_error",
+        xlabel="$\\epsilon'$",
+        ylabel="rel. error",
+        methods=["Local", "IdealShuffle", "Drop", "Pool"],
+        caption="Side-by-side Monte Carlo bounded-sum utility at $m=10^5$: synthetic beta-distributed values (left) and Adult hours-per-week empirical bootstrap (right). The Laplace report is a utility model.",
+        label="fig:sum-error-zipf-adult",
+        extra_axis="ymode=log",
+    )
+    count += 1
+    paired_line_figure(
+        csv_name="fig_heavyhitter_f1_zipf_adult.csv",
+        tex_name="fig_heavyhitter_f1_zipf_adult.tex",
+        x_col="epsilon_prime",
+        y_col="f1",
+        xlabel="$\\epsilon'$",
+        ylabel="top-50 F1",
+        methods=["Local", "IdealShuffle", "Drop"],
+        caption="Side-by-side Monte Carlo heavy-hitter utility at $m=10^5$: synthetic Zipf categories (left) and Adult occupation--education categories (right).",
+        label="fig:heavyhitter-f1-zipf-adult",
+        extra_axis="ymin=0, ymax=1.02",
+    )
+    count += 1
     bar_figure_microbench()
     count += 1
     bar_figure_dpf_phase_breakdown()

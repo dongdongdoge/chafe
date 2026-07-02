@@ -13,3 +13,9 @@ m,delay_seconds,method,source_type,arrival_rate_reports_per_s,N,rho,M,tau,eps0,d
 50000,0.0,Chafe online anonymization,analytic_cost,20000.0,,,,,,,hidden_slot_online,ingestion_waiting_time
 100000,2.499975,Collect-then-shuffle,analytic_cost,20000.0,,,,,,,batch_gate,average_waiting_time
 100000,0.0,Chafe online anonymization,analytic_cost,20000.0,,,,,,,hidden_slot_online,ingestion_waiting_time
+200000,4.999975,Collect-then-shuffle,analytic_cost,20000.0,,,,,,,batch_gate,average_waiting_time
+200000,0.0,Chafe online anonymization,analytic_cost,20000.0,,,,,,,hidden_slot_online,ingestion_waiting_time
+500000,12.499975,Collect-then-shuffle,analytic_cost,20000.0,,,,,,,batch_gate,average_waiting_time
+500000,0.0,Chafe online anonymization,analytic_cost,20000.0,,,,,,,hidden_slot_online,ingestion_waiting_time
+1000000,24.999975,Collect-then-shuffle,analytic_cost,20000.0,,,,,,,batch_gate,average_waiting_time
+1000000,0.0,Chafe online anonymization,analytic_cost,20000.0,,,,,,,hidden_slot_online,ingestion_waiting_time

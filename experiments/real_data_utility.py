@@ -21,12 +21,12 @@ from chafe_eval_lib import (
 
 EPS_PRIME_GRID = [0.02, 0.04, 0.08, 0.16, 0.32]
 SEEDS = list(range(30))
-SAMPLE_M = 5_000
+SAMPLE_M = 100_000
 RHO = 1.0
 TAU = 2.0
 DELTA = 1e-6
 RANGE_QUERIES = 1_000
-MIN_RANGE_COUNT = 25.0
+MIN_RANGE_COUNT = 100.0
 TOP_K = 50
 DATASET_NAME = "UCI Adult / Census Income"
 DATASET_URL = "https://archive.ics.uci.edu/dataset/2/adult"
@@ -130,7 +130,7 @@ def simulate_age_range(age_values: np.ndarray, dataset_rows: int) -> list[dict]:
 
     for seed in SEEDS:
         rng = np.random.default_rng(1_000_000 + seed)
-        sample_idx = rng.choice(len(age_codes), size=SAMPLE_M, replace=False)
+        sample_idx = rng.choice(len(age_codes), size=SAMPLE_M, replace=SAMPLE_M > len(age_codes))
         values = age_codes[sample_idx]
         true_hist = np.bincount(values, minlength=k).astype(float)
         interval_rng = np.random.default_rng(1_100_000 + seed)
@@ -162,6 +162,9 @@ def simulate_age_range(age_values: np.ndarray, dataset_rows: int) -> list[dict]:
                     "dataset": DATASET_NAME,
                     "dataset_source_url": DATASET_URL,
                     "dataset_rows_total": dataset_rows,
+                    "sampling_model": "empirical_bootstrap_with_replacement"
+                    if SAMPLE_M > dataset_rows
+                    else "without_replacement_sample",
                     "m": SAMPLE_M,
                     "N": N,
                     "rho": RHO,
@@ -191,7 +194,7 @@ def simulate_heavy_hitters(joint_codes: np.ndarray, k: int, dataset_rows: int) -
 
     for seed in SEEDS:
         rng = np.random.default_rng(1_200_000 + seed)
-        sample_idx = rng.choice(len(joint_codes), size=SAMPLE_M, replace=False)
+        sample_idx = rng.choice(len(joint_codes), size=SAMPLE_M, replace=SAMPLE_M > len(joint_codes))
         values = joint_codes[sample_idx]
         true_hist = np.bincount(values, minlength=k).astype(float)
         for eps_prime in EPS_PRIME_GRID:
@@ -222,6 +225,9 @@ def simulate_heavy_hitters(joint_codes: np.ndarray, k: int, dataset_rows: int) -
                     "dataset": DATASET_NAME,
                     "dataset_source_url": DATASET_URL,
                     "dataset_rows_total": dataset_rows,
+                    "sampling_model": "empirical_bootstrap_with_replacement"
+                    if SAMPLE_M > dataset_rows
+                    else "without_replacement_sample",
                     "m": SAMPLE_M,
                     "N": N,
                     "rho": RHO,
@@ -252,7 +258,7 @@ def simulate_hours_sum(hours: np.ndarray, dataset_rows: int) -> list[dict]:
 
     for seed in SEEDS:
         rng = np.random.default_rng(1_300_000 + seed)
-        sample_idx = rng.choice(len(bounded), size=SAMPLE_M, replace=False)
+        sample_idx = rng.choice(len(bounded), size=SAMPLE_M, replace=SAMPLE_M > len(bounded))
         values = bounded[sample_idx]
         true_sum = float(values.sum())
         for eps_prime in EPS_PRIME_GRID:
@@ -283,6 +289,9 @@ def simulate_hours_sum(hours: np.ndarray, dataset_rows: int) -> list[dict]:
                     "dataset": DATASET_NAME,
                     "dataset_source_url": DATASET_URL,
                     "dataset_rows_total": dataset_rows,
+                    "sampling_model": "empirical_bootstrap_with_replacement"
+                    if SAMPLE_M > dataset_rows
+                    else "without_replacement_sample",
                     "m": SAMPLE_M,
                     "N": N,
                     "rho": RHO,
