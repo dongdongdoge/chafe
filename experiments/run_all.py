@@ -98,7 +98,7 @@ def summarize_outputs() -> str:
             ),
             f"- The Drop formula proxy falls to epsilon'={float(drop_rho2['epsilon']):.4g} at rho=2 on the same grid.",
             (
-                f"- Exact small-scale Drop hockey-stick validation has exact/proxy ratios "
+                f"- Exact finite-domain Drop hockey-stick validation has exact/proxy ratios "
                 f"{min(exact_ratios):.3g}..{max(exact_ratios):.3g} over the rho grid."
             ),
             (

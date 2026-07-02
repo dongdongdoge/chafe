@@ -240,6 +240,57 @@ def paired_line_figure(
     (FIGURE_DIR / tex_name).write_text(body)
 
 
+def exact_vs_proxy_figure() -> None:
+    rows = read_csv(DATA_DIR / "fig_exact_vs_proxy_drop.csv")
+    panels = [
+        ("rho", "rho", "$\\rho=m/N$", "$m=10^5$"),
+        ("m", "m", "$m$", "$\\rho=1$"),
+    ]
+    methods = ["Exact hockey-stick", "Second-order proxy"]
+    rendered = []
+    for sweep, x_col, xlabel, title in panels:
+        subset = [row for row in rows if row["sweep"] == sweep]
+        plots = []
+        for idx, method in enumerate(methods):
+            method_subset = [row for row in subset if row["method"] == method]
+            plots.append(
+                "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
+                + coordinates(method_subset, x_col, "epsilon")
+                + "};\n"
+                + f"\\addlegendentry{{{method}}}"
+            )
+        extra = "ymode=log"
+        if x_col == "m":
+            extra += ", xmode=log"
+        panel_axis_options = axis_options(
+            "0.47\\textwidth",
+            xlabel,
+            "$\\epsilon'$",
+            "height=3.4cm, title={" + title + "}, title style={font=\\small}, " + extra,
+        )
+        rendered.append(
+            f"""\\begin{{minipage}}{{0.485\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{panel_axis_options}
+]
+{chr(10).join(plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}"""
+        )
+    body = f"""% Auto-generated from data/fig_exact_vs_proxy_drop.csv.
+\\begin{{figure*}}[t]
+\\centering
+{chr(10).join(rendered)}
+\\caption{{Exact finite-domain hockey-stick validation for binary randomized response with matched BRR-neighbor padding ($\\epsilon_0=1$, $\\tau=2$, $\\delta=10^{{-6}}$). The left panel varies $\\rho$ at $m=10^5$; the right panel varies $m$ at $\\rho=1$. The second-order proxy remains conservative while tracking the same large-scale trend; the exact curve is still a count-domain validation experiment rather than a full large-domain implementation accountant.}}
+\\label{{fig:exact-vs-proxy-drop}}
+\\end{{figure*}}
+"""
+    (FIGURE_DIR / "fig_exact_vs_proxy_drop.tex").write_text(body)
+
+
 def bar_figure_microbench() -> None:
     rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
     vals = {row["method"]: float(row["time_ms_per_report"]) for row in rows}
@@ -353,17 +404,6 @@ def generate_all() -> dict[str, int]:
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)"],
             "caption": "Formula-derived privacy amplification versus matched release expansion $\\tau=M/m$ for $m=10^6$, $\\rho=1$, $\\epsilon_0=1$, and $\\delta=10^{-6}$.",
             "label": "fig:privacy-vs-tau",
-        },
-        {
-            "csv_name": "fig_exact_vs_proxy_drop.csv",
-            "tex_name": "fig_exact_vs_proxy_drop.tex",
-            "x_col": "rho",
-            "y_col": "epsilon",
-            "xlabel": "$\\rho=m/N$",
-            "ylabel": "$\\epsilon'$",
-            "methods": ["Drop second-order proxy", "Drop exact hockey-stick"],
-            "caption": "Drop second-order proxy versus exact small-scale finite-domain hockey-stick accounting for BRR with matched Bernoulli padding ($m=200$, $\\tau=2$, $\\epsilon_0=1$, $\\delta=10^{-6}$). The exact curve is a validation experiment, not the large-scale accountant.",
-            "label": "fig:exact-vs-proxy-drop",
         },
         {
             "csv_name": "fig_collision_regimes.csv",
@@ -549,6 +589,8 @@ def generate_all() -> dict[str, int]:
     for spec in figure_specs:
         line_figure(**spec)
         count += 1
+    exact_vs_proxy_figure()
+    count += 1
     privacy_surface_figure()
     count += 1
     paired_line_figure(

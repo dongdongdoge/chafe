@@ -1,6 +1,6 @@
 Privacy monotonicity checks passed.
 Collision regime normalization checks passed.
-Exact/proxy ratios remain within a 10x band on the small-scale validation grid.
+Exact/proxy ratios remain within a 10x band on the finite-domain validation grid.
 Google DPF backend timing and reconstruction checks passed.
 Source-type checks passed for all figure CSVs.
 Monte Carlo replicate-count checks passed.

@@ -66,10 +66,10 @@ def validate_exact_proxy(notes: list[str]) -> None:
     if min_ratio < 0.1 or max_ratio > 10:
         notes.append(
             "Exact/proxy ratios are outside a tight 10x band for some rho; evaluation text treats this as "
-            "small-scale validation of trend/order, not as equality."
+            "finite-domain validation of trend/order, not as equality."
         )
     else:
-        notes.append("Exact/proxy ratios remain within a 10x band on the small-scale validation grid.")
+        notes.append("Exact/proxy ratios remain within a 10x band on the finite-domain validation grid.")
 
 
 def validate_microbench(notes: list[str]) -> None:
