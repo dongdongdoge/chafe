@@ -545,6 +545,200 @@ def bar_figure_dpf_phase_breakdown() -> None:
     (FIGURE_DIR / "fig_dpf_phase_breakdown.tex").write_text(body)
 
 
+def dpf_backend_summary_figure() -> None:
+    methods = [PACKED_METHOD, TUPLE_METHOD, DUAL_METHOD]
+    legend_name = "legend:dpf-backend-summary"
+    legend_plots = []
+    for idx, method in enumerate(methods):
+        legend_plots.append(
+            "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {(0,0)};\n"
+            + f"\\addlegendentry{{{method.replace('Google DPF ', '')}}}"
+        )
+
+    panels = []
+    for csv_name, x_col, y_col, xlabel, ylabel, title, extra_axis in [
+        (
+            "fig_dpf_scaling.csv",
+            "N",
+            "time_ms_per_report",
+            "slot domain $N$",
+            "ms/report",
+            "Domain Scaling",
+            "xmode=log, ymode=log, log basis x=2",
+        ),
+        (
+            "fig_dpf_thread_scaling.csv",
+            "threads",
+            "reports_per_second",
+            "worker threads",
+            "reports/s",
+            "$N=2^{17}$ Thread Scaling",
+            "xmin=0.8, ymin=0",
+        ),
+    ]:
+        rows = read_csv(DATA_DIR / csv_name)
+        plots = []
+        for idx, method in enumerate(methods):
+            subset = method_rows(rows, method)
+            if not subset:
+                raise ValueError(f"{csv_name}: no rows for method {method}")
+            plots.append(
+                "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
+                + coordinates(subset, x_col, y_col)
+                + "};"
+            )
+        panel_axis_options = axis_options(
+            "\\linewidth",
+            xlabel,
+            ylabel,
+            "height=3.35cm, title={" + title + "}, title style={font=\\small}, " + extra_axis,
+        )
+        panels.append(
+            f"""\\begin{{minipage}}{{0.485\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{panel_axis_options}
+]
+{chr(10).join(plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}"""
+        )
+
+    body = f"""% Auto-generated from data/fig_dpf_scaling.csv and data/fig_dpf_thread_scaling.csv.
+\\begin{{figure*}}[t]
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+hide axis,
+scale only axis,
+height=0pt,
+width=0pt,
+legend columns=3,
+legend style={{font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={{column sep=0.7em}}}},
+legend image post style={{line width=0.9pt}},
+legend to name={legend_name}
+]
+{chr(10).join(legend_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\ref{{{legend_name}}}\\par\\vspace{{0.7mm}}
+{chr(10).join(panels)}
+\\caption{{Measured Google DPF write-backend scaling. Packed64 is the optimized single-word Chafe backend; tuple product and dual-track are unoptimized baselines. Left: single-thread per-report cost as the hidden-slot domain grows. Right: report-batch parallelism at $N=2^{{17}}$.}}
+\\label{{fig:dpf-backend-summary}}
+\\end{{figure*}}
+"""
+    (FIGURE_DIR / "fig_dpf_backend_summary.tex").write_text(body)
+
+
+def dpf_backend_breakdown_summary_figure() -> None:
+    rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
+    phase_rows = read_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv")
+    methods = [PACKED_METHOD, TUPLE_METHOD, DUAL_METHOD]
+    short_names = {
+        PACKED_METHOD: "Packed",
+        TUPLE_METHOD: "Tuple",
+        DUAL_METHOD: "Dual",
+    }
+    vals = {row["method"]: float(row["time_ms_per_report"]) for row in rows}
+    benchmark_n = int(float(rows[0]["N"]))
+    benchmark_log_n = int(float(rows[0]["log_n"]))
+    legend_name = "legend:dpf-backend-breakdown"
+    legend_plots = []
+    for idx, method in enumerate(methods):
+        legend_plots.append(
+            "\\addplot+[ybar, " + BAR_STYLES[idx % len(BAR_STYLES)] + "] coordinates {(0,0)};\n"
+            + f"\\addlegendentry{{{short_names[method]}}}"
+        )
+
+    total_plots = []
+    for idx, method in enumerate(methods):
+        total_plots.append(
+            "\\addplot+[" + BAR_STYLES[idx % len(BAR_STYLES)] + ", bar shift=0pt] coordinates {"
+            + f"({short_names[method]},{fnum(vals[method])})"
+            + "};"
+        )
+    total_axis_options = axis_options(
+        "\\linewidth",
+        "",
+        "ms/report",
+        (
+            "height=3.35cm, title={End-to-End Backend}, title style={font=\\small}, "
+            "ybar, bar width=10pt, symbolic x coords={Packed,Tuple,Dual}, xtick=data, ymin=0, enlarge x limits=0.25"
+        ),
+    )
+
+    phase_names = {
+        "keygen": "Keygen",
+        "context": "Ctx",
+        "eval": "Eval",
+        "accumulate": "Acc",
+    }
+    phases = ["keygen", "context", "eval", "accumulate"]
+    phase_plots = []
+    for idx, method in enumerate(methods):
+        by_phase = {
+            row["phase"]: float(row["time_ms_per_report"])
+            for row in phase_rows
+            if row["method"] == method
+        }
+        coords = " ".join(f"({phase_names[phase]},{fnum(by_phase[phase])})" for phase in phases)
+        phase_plots.append("\\addplot+[" + BAR_STYLES[idx % len(BAR_STYLES)] + "] coordinates {" + coords + "};")
+    phase_axis_options = axis_options(
+        "\\linewidth",
+        "",
+        "ms/report",
+        (
+            "height=3.35cm, title={Phase Breakdown}, title style={font=\\small}, "
+            "ybar, bar width=4.3pt, symbolic x coords={Keygen,Ctx,Eval,Acc}, xtick=data, ymin=0, enlarge x limits=0.20"
+        ),
+    )
+
+    body = f"""% Auto-generated from data/fig_product_vs_dual_microbench.csv and data/fig_dpf_phase_breakdown.csv.
+\\begin{{figure*}}[t]
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+hide axis,
+scale only axis,
+height=0pt,
+width=0pt,
+legend columns=3,
+legend style={{font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={{column sep=0.7em}}}},
+legend to name={legend_name}
+]
+{chr(10).join(legend_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\ref{{{legend_name}}}\\par\\vspace{{0.7mm}}
+\\begin{{minipage}}{{0.485\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{total_axis_options}
+]
+{chr(10).join(total_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}
+\\begin{{minipage}}{{0.485\\textwidth}}
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{phase_axis_options}
+]
+{chr(10).join(phase_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\end{{minipage}}
+\\caption{{Measured Google DPF write-backend decomposition at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. Packed64 encodes occupancy and payload in one 64-bit value; tuple product and dual-track show the cost of less specialized encodings.}}
+\\label{{fig:dpf-backend-breakdown}}
+\\end{{figure*}}
+"""
+    (FIGURE_DIR / "fig_dpf_backend_breakdown.tex").write_text(body)
+
+
 def generate_all() -> dict[str, int]:
     ensure_dirs()
     figure_specs = [
@@ -772,6 +966,10 @@ def generate_all() -> dict[str, int]:
     exact_vs_proxy_figure()
     count += 1
     ingestion_latency_figure()
+    count += 1
+    dpf_backend_summary_figure()
+    count += 1
+    dpf_backend_breakdown_summary_figure()
     count += 1
     privacy_surface_figure()
     count += 1
