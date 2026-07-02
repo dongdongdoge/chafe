@@ -12,6 +12,13 @@ LINE_STYLES = [
     "black!85, dashdotted, mark=diamond*, mark size=1.3pt",
 ]
 
+FORMULA_LINE_STYLES = [
+    "black, solid, very thick, no markers",
+    "black!70, dashed, thick, no markers",
+    "black!52, dotted, thick, no markers",
+    "black!85, dashdotted, thick, no markers",
+]
+
 
 def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
     opts = [
@@ -62,15 +69,17 @@ def line_figure(
     label: str,
     width: str = "0.48\\textwidth",
     extra_axis: str = "",
+    line_styles: list[str] | None = None,
 ) -> None:
     rows = read_csv(DATA_DIR / csv_name)
     plots = []
+    styles = line_styles or LINE_STYLES
     for idx, method in enumerate(methods):
         subset = method_rows(rows, method)
         if not subset:
             raise ValueError(f"{csv_name}: no rows for method {method}")
         plots.append(
-            "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
+            "\\addplot+[" + styles[idx % len(styles)] + "] coordinates {"
             + coordinates(subset, x_col, y_col)
             + "};\n"
             + f"\\addlegendentry{{{method}}}"
@@ -110,34 +119,38 @@ def surface_coordinates(rows: list[dict[str, str]], method: str) -> tuple[str, i
 def privacy_surface_figure() -> None:
     rows = read_csv(DATA_DIR / "fig_privacy_surface_rho_tau.csv")
     panels = []
-    for method, title in [("Drop (matched padding)", "Drop"), ("Pool (replacement)", "Pool replacement")]:
+    for method, title in [
+        ("Drop (matched padding)", "Drop"),
+        ("Pool (replacement)", "Pool repl."),
+        ("Pool (add/remove)", "Pool add/rem."),
+    ]:
         coords, mesh_rows = surface_coordinates(rows, method)
         panels.append(
-            f"""\\begin{{minipage}}{{0.485\\textwidth}}
+            f"""\\begin{{minipage}}{{0.323\\textwidth}}
 \\centering
 \\begin{{tikzpicture}}
 \\begin{{axis}}[
-width=0.47\\textwidth,
-height=4.4cm,
+width=0.315\\textwidth,
+height=4.25cm,
 grid=both,
 grid style={{gray!15}},
-tick label style={{font=\\footnotesize}},
-label style={{font=\\small}},
+tick label style={{font=\\scriptsize}},
+label style={{font=\\scriptsize}},
 title={{{title}}},
 title style={{font=\\small}},
 xlabel={{$\\rho=m/N$}},
 ylabel={{$\\tau=M/m$}},
 zlabel={{$\\epsilon'$}},
-view={{38}}{{24}},
-colormap={{graymap}}{{gray(0cm)=(0.18); gray(1cm)=(0.92)}},
+view={{42}}{{25}},
+colormap={{chafeprivacy}}{{rgb255(0cm)=(68,1,84); rgb255(1cm)=(59,82,139); rgb255(2cm)=(33,145,140); rgb255(3cm)=(94,201,98); rgb255(4cm)=(253,231,37)}},
 colorbar=false,
 axis line style={{black!70}},
 tick style={{black!70}}
 ]
 \\addplot3[
 surf,
-shader=flat corner,
-draw=black!35,
+shader=interp,
+draw=black!18,
 mesh/rows={mesh_rows}
 ] coordinates {{
 {coords}
@@ -150,7 +163,7 @@ mesh/rows={mesh_rows}
 \\begin{{figure*}}[t]
 \\centering
 {chr(10).join(panels)}
-\\caption{{Formula-derived large-scale privacy surface over load factor and release expansion for $m=10^6$, $\\epsilon_0=1$, and $\\delta=10^{{-6}}$. The left panel is matched Drop; the right panel is the Pool replacement-style second-order bound.}}
+\\caption{{Formula-derived large-scale privacy surface over load factor and release expansion for $m=10^6$, $\\epsilon_0=1$, and $\\delta=10^{{-6}}$. Color encodes $\\epsilon'$ within each surface. The panels show matched Drop, Pool under the replacement-style bound, and Pool under the add/remove participation bound.}}
 \\label{{fig:privacy-surface-rho-tau}}
 \\end{{figure*}}
 """
@@ -291,6 +304,52 @@ def exact_vs_proxy_figure() -> None:
     (FIGURE_DIR / "fig_exact_vs_proxy_drop.tex").write_text(body)
 
 
+def ingestion_latency_figure() -> None:
+    rows = read_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv")
+    online = method_rows(rows, "Chafe online DPF service")
+    batch = method_rows(rows, "Collect-then-shuffle gate")
+    overload = method_rows(rows, "Chafe overload horizon")
+    crossover = method_rows(rows, "Estimated crossover")
+    if not online or not batch or not overload or not crossover:
+        raise ValueError("fig_ingestion_latency_vs_rate.csv is missing latency-model rows")
+    service_rate = float(online[0]["service_rate_reports_per_s"])
+    cross_x = float(crossover[0]["arrival_rate_reports_per_s"])
+    cross_y = float(crossover[0]["avg_latency_seconds"])
+    opts = axis_options(
+        "0.48\\textwidth",
+        "arrival rate $\\lambda$ (reports/s)",
+        "seconds",
+        (
+            "xmode=log, ymode=log, xmin=1, xmax=22000, ymin=1e-3, ymax=1e6, "
+            "legend style={font=\\tiny, fill=white, draw=black!20, at={(0.03,0.97)}, anchor=north west, cells={anchor=west}}"
+        ),
+    )
+    body = f"""% Auto-generated from data/fig_ingestion_latency_vs_rate.csv.
+\\begin{{figure}}[t]
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+{opts}
+]
+\\addplot+[black, solid, very thick, no markers] coordinates {{{coordinates(online, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addlegendentry{{Chafe M/D/1 latency}}
+\\addplot+[black!65, dashed, thick, no markers] coordinates {{{coordinates(batch, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addlegendentry{{collect gate}}
+\\addplot+[black!45, dotted, thick, no markers] coordinates {{{coordinates(overload, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
+\\addlegendentry{{overload horizon}}
+\\addplot+[black!35, densely dashed, no markers, forget plot] coordinates {{({fnum(service_rate)},1e-3) ({fnum(service_rate)},1e6)}};
+\\addplot+[black, only marks, mark=diamond*, mark size=1.8pt] coordinates {{({fnum(cross_x)},{fnum(cross_y)})}};
+\\addlegendentry{{estimated crossover}}
+\\node[font=\\tiny, rotate=90, anchor=south] at (axis cs:{fnum(service_rate)},2e-3) {{service rate}};
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\caption{{Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{{12}}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. The vertical line marks the measured single-thread service rate. The dotted overload curve is not steady-state latency; it is the time to accumulate one epoch of backlog after arrivals exceed service capacity.}}
+\\label{{fig:ingestion-latency-vs-rate}}
+\\end{{figure}}
+"""
+    (FIGURE_DIR / "fig_ingestion_latency_vs_rate.tex").write_text(body)
+
+
 def bar_figure_microbench() -> None:
     rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
     vals = {row["method"]: float(row["time_ms_per_report"]) for row in rows}
@@ -382,6 +441,7 @@ def generate_all() -> dict[str, int]:
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)", "Pool (add/remove)"],
             "caption": "Formula-derived privacy amplification versus load factor for $m=10^6$, $\\tau=2$, $\\epsilon_0=1$, and $\\delta=10^{-6}$. Pool replacement and add/remove curves use their respective second-order bounds.",
             "label": "fig:privacy-vs-rho",
+            "line_styles": FORMULA_LINE_STYLES,
         },
         {
             "csv_name": "fig_privacy_vs_eps0.csv",
@@ -393,6 +453,7 @@ def generate_all() -> dict[str, int]:
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)"],
             "caption": "Formula-derived privacy amplification as the local privacy parameter varies for $m=10^6$, $\\rho=1$, $\\tau=2$, and $\\delta=10^{-6}$.",
             "label": "fig:privacy-vs-eps0",
+            "line_styles": FORMULA_LINE_STYLES,
         },
         {
             "csv_name": "fig_privacy_vs_tau.csv",
@@ -404,6 +465,7 @@ def generate_all() -> dict[str, int]:
             "methods": ["IdealShuffle", "Drop (matched padding)", "Pool (replacement)"],
             "caption": "Formula-derived privacy amplification versus matched release expansion $\\tau=M/m$ for $m=10^6$, $\\rho=1$, $\\epsilon_0=1$, and $\\delta=10^{-6}$.",
             "label": "fig:privacy-vs-tau",
+            "line_styles": FORMULA_LINE_STYLES,
         },
         {
             "csv_name": "fig_collision_regimes.csv",
@@ -439,6 +501,7 @@ def generate_all() -> dict[str, int]:
             "label": "fig:privacy-utility-frontier",
             "width": "0.48\\textwidth",
             "extra_axis": "xmin=0.95",
+            "line_styles": FORMULA_LINE_STYLES,
         },
         {
             "csv_name": "fig_batch_gating_delay.csv",
@@ -513,18 +576,6 @@ def generate_all() -> dict[str, int]:
             "extra_axis": "xmode=log, ymode=log, log basis x=2",
         },
         {
-            "csv_name": "fig_ingestion_latency_vs_rate.csv",
-            "tex_name": "fig_ingestion_latency_vs_rate.tex",
-            "x_col": "arrival_rate_reports_per_s",
-            "y_col": "avg_latency_seconds",
-            "xlabel": "arrival rate $\\lambda$ (reports/s)",
-            "ylabel": "average latency (s)",
-            "methods": ["Chafe online DPF service", "Collect-then-shuffle gate"],
-            "caption": "Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{12}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. Unstable Chafe rows are retained in the CSV as backlog growth and omitted from the plotted curve.",
-            "label": "fig:ingestion-latency-vs-rate",
-            "extra_axis": "xmode=log, ymode=log",
-        },
-        {
             "csv_name": "fig_fixed_eps0_range_error.csv",
             "tex_name": "fig_fixed_eps0_range_error.tex",
             "x_col": "eps0",
@@ -590,6 +641,8 @@ def generate_all() -> dict[str, int]:
         line_figure(**spec)
         count += 1
     exact_vs_proxy_figure()
+    count += 1
+    ingestion_latency_figure()
     count += 1
     privacy_surface_figure()
     count += 1

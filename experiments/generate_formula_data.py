@@ -430,6 +430,20 @@ def generate_privacy_surface_rho_tau() -> list[dict]:
                     bound="second_order_replacement_surface",
                 )
             )
+            rows.append(
+                base_row(
+                    method="Pool (add/remove)",
+                    epsilon=eps_pool_add_remove(eps0, rho, M, delta),
+                    source_type="formula",
+                    m=m,
+                    rho=rho,
+                    tau=tau,
+                    eps0=eps0,
+                    delta=delta,
+                    decoder="pool",
+                    bound="second_order_add_remove_surface",
+                )
+            )
     write_csv(DATA_DIR / "fig_privacy_surface_rho_tau.csv", rows)
     return rows
 

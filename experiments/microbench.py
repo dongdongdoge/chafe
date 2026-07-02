@@ -240,20 +240,81 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
     service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - 4096))
     service_ms = float(service_row["time_ms_per_report"])
     service_rate = 1000.0 / service_ms
+    service_seconds = service_ms / 1000.0
     epoch_m = 1_000_000
-    arrival_rates = [1, 2, 5, 10, 20, 40, 60, 80, 90, 100, 200, 500, 1_000, 5_000, 20_000]
-    rows: list[dict] = []
-    for arrival_rate in arrival_rates:
+    stable_rates = [
+        1,
+        2,
+        5,
+        10,
+        20,
+        40,
+        60,
+        80,
+        90,
+        95,
+        98,
+        100,
+        101,
+        102,
+        103,
+        0.995 * service_rate,
+        0.999 * service_rate,
+        0.9999 * service_rate,
+    ]
+    overload_rates = [
+        1.0001 * service_rate,
+        1.001 * service_rate,
+        1.01 * service_rate,
+        1.05 * service_rate,
+        1.1 * service_rate,
+        200,
+        500,
+        1_000,
+        5_000,
+        20_000,
+    ]
+    batch_rates = sorted(
+        {
+            1.0,
+            2.0,
+            5.0,
+            10.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0,
+            90.0,
+            100.0,
+            service_rate,
+            200.0,
+            500.0,
+            1_000.0,
+            5_000.0,
+            20_000.0,
+        }
+    )
+
+    def md1_latency(arrival_rate: float) -> float:
         utilization = arrival_rate / service_rate
-        stable = utilization < 1.0
-        if stable:
-            service_seconds = service_ms / 1000.0
-            queue_seconds = arrival_rate * service_seconds * service_seconds / (2.0 * (1.0 - utilization))
-            chafe_latency = service_seconds + queue_seconds
-            backlog = 0.0
+        return service_seconds + arrival_rate * service_seconds * service_seconds / (2.0 * (1.0 - utilization))
+
+    def batch_delay(arrival_rate: float) -> float:
+        return (epoch_m - 1.0) / (2.0 * arrival_rate)
+
+    left, right = 0.99 * service_rate, (1.0 - 1e-12) * service_rate
+    for _ in range(120):
+        mid = 0.5 * (left + right)
+        if md1_latency(mid) < batch_delay(mid):
+            left = mid
         else:
-            chafe_latency = ""
-            backlog = arrival_rate - service_rate
+            right = mid
+    crossover_rate = right
+    crossover_delay = batch_delay(crossover_rate)
+    rows: list[dict] = []
+    for arrival_rate in sorted({float(rate) for rate in stable_rates if rate < service_rate}):
+        utilization = arrival_rate / service_rate
+        chafe_latency = md1_latency(arrival_rate)
         rows.append(
             {
                 "arrival_rate_reports_per_s": arrival_rate,
@@ -261,8 +322,8 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "utilization": utilization,
                 "avg_latency_seconds": chafe_latency,
                 "batch_gating_seconds": 0.0,
-                "backlog_growth_reports_per_s": backlog,
-                "stable": str(stable).lower(),
+                "backlog_growth_reports_per_s": 0.0,
+                "stable": "true",
                 "method": "Chafe online DPF service",
                 "source_type": "analytic_cost",
                 "benchmark": "md1_queue_from_measured_google_dpf",
@@ -279,14 +340,41 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "model": "M/D/1 mean sojourn time; unstable rows record backlog growth",
             }
         )
-        batch_delay = (epoch_m - 1.0) / (2.0 * arrival_rate)
+    for arrival_rate in sorted({float(rate) for rate in overload_rates if rate > service_rate}):
+        backlog = arrival_rate - service_rate
+        rows.append(
+            {
+                "arrival_rate_reports_per_s": arrival_rate,
+                "service_rate_reports_per_s": service_rate,
+                "utilization": arrival_rate / service_rate,
+                "avg_latency_seconds": epoch_m / backlog,
+                "batch_gating_seconds": 0.0,
+                "backlog_growth_reports_per_s": backlog,
+                "stable": "false",
+                "method": "Chafe overload horizon",
+                "source_type": "analytic_cost",
+                "benchmark": "overload_backlog_model_from_measured_google_dpf",
+                "N": int(float(service_row["N"])),
+                "log_n": service_row["log_n"],
+                "m": epoch_m,
+                "rho": "",
+                "M": "",
+                "tau": "",
+                "eps0": "",
+                "delta": "",
+                "decoder": "hidden_slot_online",
+                "derived_from": "fig_dpf_scaling.csv",
+                "model": "time to accumulate one epoch of backlog after lambda exceeds service rate",
+            }
+        )
+    for arrival_rate in batch_rates:
         rows.append(
             {
                 "arrival_rate_reports_per_s": arrival_rate,
                 "service_rate_reports_per_s": "",
                 "utilization": "",
-                "avg_latency_seconds": batch_delay,
-                "batch_gating_seconds": batch_delay,
+                "avg_latency_seconds": batch_delay(arrival_rate),
+                "batch_gating_seconds": batch_delay(arrival_rate),
                 "backlog_growth_reports_per_s": 0.0,
                 "stable": "true",
                 "method": "Collect-then-shuffle gate",
@@ -305,6 +393,31 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "model": "(m-1)/(2 lambda)",
             }
         )
+    rows.append(
+        {
+            "arrival_rate_reports_per_s": crossover_rate,
+            "service_rate_reports_per_s": service_rate,
+            "utilization": crossover_rate / service_rate,
+            "avg_latency_seconds": crossover_delay,
+            "batch_gating_seconds": crossover_delay,
+            "backlog_growth_reports_per_s": 0.0,
+            "stable": "true",
+            "method": "Estimated crossover",
+            "source_type": "analytic_cost",
+            "benchmark": "md1_queue_and_batch_gate_intersection",
+            "N": int(float(service_row["N"])),
+            "log_n": service_row["log_n"],
+            "m": epoch_m,
+            "rho": "",
+            "M": "",
+            "tau": "",
+            "eps0": "",
+            "delta": "",
+            "decoder": "hidden_slot_online_vs_batch_gate",
+            "derived_from": "fig_dpf_scaling.csv",
+            "model": "binary search for M/D/1 latency equal to batch gate",
+        }
+    )
     write_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv", rows)
     return rows
 

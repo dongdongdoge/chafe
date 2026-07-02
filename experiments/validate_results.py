@@ -131,6 +131,18 @@ def validate_microbench(notes: list[str]) -> None:
             if row["method"] == "Collect-then-shuffle gate":
                 if float(row["avg_latency_seconds"]) <= 0:
                     raise AssertionError("batch-gating latency must be positive")
+            if row["method"] == "Chafe overload horizon":
+                if row["stable"] != "false":
+                    raise AssertionError("overload horizon rows must be marked unstable")
+                if float(row["backlog_growth_reports_per_s"]) <= 0:
+                    raise AssertionError("overload horizon rows must report positive backlog growth")
+                if float(row["avg_latency_seconds"]) <= 0:
+                    raise AssertionError("overload horizon seconds must be positive")
+            if row["method"] == "Estimated crossover":
+                if float(row["avg_latency_seconds"]) <= 0:
+                    raise AssertionError("estimated crossover seconds must be positive")
+                if not (0.99 <= float(row["utilization"]) <= 1.0):
+                    raise AssertionError("estimated crossover should occur near service saturation")
         notes.append("Google DPF backend timing and reconstruction checks passed.")
         return
     notes.append("Microbenchmark normalized-work and timing checks passed.")
