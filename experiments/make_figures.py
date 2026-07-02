@@ -192,10 +192,16 @@ def paired_line_figure(
     extra_axis: str = "",
 ) -> None:
     rows = read_csv(DATA_DIR / csv_name)
+    legend_name = "legend:" + tex_name.replace(".tex", "").replace("_", "-")
+    legend_plots = []
+    for idx, method in enumerate(methods):
+        legend_plots.append(
+            "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {(0,0)};\n"
+            + f"\\addlegendentry{{{method}}}"
+        )
     panels = []
     for panel, title in [("Synthetic Zipf", "Zipf"), ("Adult empirical bootstrap", "Adult")]:
         plots = []
-        show_legend = panel == "Synthetic Zipf"
         for idx, method in enumerate(methods):
             subset = [row for row in rows if row["panel"] == panel and row["method"] == method]
             if not subset:
@@ -205,13 +211,11 @@ def paired_line_figure(
                 + paired_coordinates(rows, panel, method, x_col, y_col)
                 + "};"
             )
-            if show_legend:
-                plot += "\n" + f"\\addlegendentry{{{method}}}"
             plots.append(plot)
         axis_opts = [
             "scale only axis",
-            "width=0.30\\columnwidth",
-            "height=2.55cm",
+            "width=\\linewidth",
+            "height=2.65cm",
             "grid=both",
             "grid style={gray!18}",
             "major grid style={gray!25}",
@@ -223,7 +227,6 @@ def paired_line_figure(
             "title style={font=\\scriptsize}",
             "xlabel={" + xlabel + "}",
             "ylabel={" + (ylabel if panel == "Synthetic Zipf" else "") + "}",
-            "legend style={font=\\tiny, fill=white, draw=black!15, at={(0.03,0.97)}, anchor=north west, cells={anchor=west}}",
         ]
         if panel != "Synthetic Zipf":
             axis_opts.append("yticklabel=\\empty")
@@ -245,6 +248,20 @@ def paired_line_figure(
     body = f"""% Auto-generated from data/{csv_name}.
 \\begin{{figure}}[t]
 \\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+hide axis,
+scale only axis,
+height=0pt,
+width=0pt,
+legend columns={min(4, len(methods))},
+legend style={{font=\\tiny, fill=white, draw=black!15, /tikz/every even column/.append style={{column sep=0.35em}}}},
+legend to name={legend_name}
+]
+{chr(10).join(legend_plots)}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\ref{{{legend_name}}}\\par\\vspace{{0.4mm}}
 {chr(10).join(panels)}
 \\caption{{{caption}}}
 \\label{{{label}}}
@@ -320,7 +337,7 @@ def ingestion_latency_figure() -> None:
         "arrival rate $\\lambda$ (reports/s)",
         "seconds",
         (
-            "xmode=log, ymode=log, xmin=1, xmax=22000, ymin=1e-3, ymax=1e6, "
+            "xmode=log, ymode=log, xmin=1, xmax=22000, ymin=1e-4, ymax=1e6, "
             "legend style={font=\\tiny, fill=white, draw=black!20, at={(0.03,0.97)}, anchor=north west, cells={anchor=west}}"
         ),
     )
@@ -337,7 +354,7 @@ def ingestion_latency_figure() -> None:
 \\addlegendentry{{collect gate}}
 \\addplot+[black!45, dotted, thick, no markers] coordinates {{{coordinates(overload, "arrival_rate_reports_per_s", "avg_latency_seconds")}}};
 \\addlegendentry{{overload horizon}}
-\\addplot+[black!35, densely dashed, no markers, forget plot] coordinates {{({fnum(service_rate)},1e-3) ({fnum(service_rate)},1e6)}};
+\\addplot+[black!35, densely dashed, no markers, forget plot] coordinates {{({fnum(service_rate)},1e-4) ({fnum(service_rate)},1e6)}};
 \\addplot+[black, only marks, mark=diamond*, mark size=1.8pt] coordinates {{({fnum(cross_x)},{fnum(cross_y)})}};
 \\addlegendentry{{estimated crossover}}
 \\node[font=\\tiny, rotate=90, anchor=south] at (axis cs:{fnum(service_rate)},2e-3) {{service rate}};
@@ -574,6 +591,18 @@ def generate_all() -> dict[str, int]:
             "caption": "Measured single-thread Google DPF backend service rate obtained as the reciprocal of measured wall-clock time per report. The curve isolates the eval-all write backend; it is not a full deployment throughput claim.",
             "label": "fig:dpf-throughput-vs-n",
             "extra_axis": "xmode=log, ymode=log, log basis x=2",
+        },
+        {
+            "csv_name": "fig_dpf_thread_scaling.csv",
+            "tex_name": "fig_dpf_thread_scaling.tex",
+            "x_col": "threads",
+            "y_col": "reports_per_second",
+            "xlabel": "worker threads",
+            "ylabel": "reports/s",
+            "methods": ["Google DPF product-valued", "Google DPF dual-track"],
+            "caption": "Measured thread scaling of the Google DPF write backend at $N=2^{12}$. Each worker evaluates independent report batches into private accumulators, followed by deterministic share reduction; the CSV records whether the binary was compiled with AES-NI, ARM crypto, or portable code.",
+            "label": "fig:dpf-thread-scaling",
+            "extra_axis": "xmin=0.8, ymin=0",
         },
         {
             "csv_name": "fig_fixed_eps0_range_error.csv",

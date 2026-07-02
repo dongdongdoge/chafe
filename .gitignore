@@ -35,3 +35,6 @@ datasets/adult/adult.names
 
 # Earlier project scaffold kept locally but excluded from this top-level artifact.
 chafe/
+!third_party/distributed_point_functions/chafe/
+!third_party/distributed_point_functions/chafe/BUILD
+!third_party/distributed_point_functions/chafe/google_dpf_write_benchmark.cc

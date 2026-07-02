@@ -14,7 +14,9 @@ row records its provenance through a `source_type` field.
   hockey-stick accountant for a small BRR instance.
 - The ingestion figures use a measured Google
   `distributed_point_functions` write-backend benchmark, plus analytic latency
-  models derived from the measured eval-all service rate.
+  models derived from the measured eval-all service rate.  The benchmark
+  reports the worker-thread count and compile-time CPU acceleration label in
+  every CSV row.
 - Workload figures are Monte Carlo simulations with at least 30 seeds.  The
   default synthetic and real-data workload size is `m=100,000`.
 - The real-data workload uses a cleaned copy of the UCI Adult/Census Income
@@ -44,8 +46,10 @@ python -m pip install -r requirements.txt
 The measured DPF benchmark requires Bazel and a C++ toolchain.  On the macOS
 environment used for the reported measurements, the wrapper script applies
 explicit include flags to avoid mixing Homebrew OpenSSL headers with BoringSSL.
-On a clean Linux or macOS toolchain, a shorter Bazel invocation may be
-sufficient.
+It also requests `-O3`; on `x86_64` it requests `-maes -msse4.1` unless
+`CHAFE_DISABLE_AES_NI=1` is set.  The emitted CSV records whether the compiled
+benchmark saw `aes_ni`, `arm_crypto`, or `portable` at compile time.  On a
+clean Linux or macOS toolchain, a shorter Bazel invocation may be sufficient.
 
 ## Reproduction
 
@@ -94,6 +98,8 @@ The validation checks include:
 - Google DPF product and dual-track reconstructions agree.
 - Microbenchmark rows have positive measured time.
 - Measured DPF service-rate rows are positive.
+- Google DPF thread-scaling rows have positive throughput and matching
+  product/dual reconstruction checksums at each thread count.
 - Analytic ingestion-latency rows distinguish stable queueing points from
   overload points with backlog growth.
 - All Monte Carlo figures use at least 20 seeds.
@@ -116,7 +122,10 @@ are not measured runtime.
 ## Notes
 
 The Google DPF measurement is a backend microbenchmark, not an end-to-end
-deployment throughput claim.  The latency-vs-arrival-rate figure combines the
-measured single-thread eval-all service rate with an explicit M/D/1 queueing
-model and a separate collect-then-shuffle batch-gating formula.  Privacy and
-workload utility are decoupled from this concrete DPF backend.
+deployment throughput claim.  The thread-scaling benchmark parallelizes
+independent report batches into private accumulators and then reduces them; it
+does not model network scheduling or deployment-level admission control.  The
+latency-vs-arrival-rate figure combines the measured single-thread eval-all
+service rate with an explicit M/D/1 queueing model and a separate
+collect-then-shuffle batch-gating formula.  Privacy and workload utility are
+decoupled from this concrete DPF backend.

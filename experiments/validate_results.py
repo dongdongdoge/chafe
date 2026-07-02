@@ -118,6 +118,23 @@ def validate_microbench(notes: list[str]) -> None:
                 raise AssertionError("DPF throughput row has wrong source_type")
             if float(row["reports_per_second"]) <= 0:
                 raise AssertionError("DPF throughput must be positive")
+        thread_rows = read_csv(DATA_DIR / "fig_dpf_thread_scaling.csv")
+        thread_by_count: dict[str, list[dict[str, str]]] = defaultdict(list)
+        for row in thread_rows:
+            if row["source_type"] != "microbenchmark":
+                raise AssertionError("DPF thread-scaling row has wrong source_type")
+            if int(float(row["threads"])) < 1:
+                raise AssertionError("DPF thread count must be positive")
+            if float(row["reports_per_second"]) <= 0:
+                raise AssertionError("DPF thread-scaling throughput must be positive")
+            if float(row["thread_speedup_vs_1"]) <= 0:
+                raise AssertionError("DPF thread-scaling speedup must be positive")
+            thread_by_count[row["threads"]].append(row)
+        for threads, t_rows in thread_by_count.items():
+            if len(t_rows) != 2:
+                raise AssertionError(f"DPF thread scaling expected two rows at threads={threads}")
+            if len({row["checksum"] for row in t_rows}) != 1:
+                raise AssertionError(f"Google DPF thread-scaling reconstructions disagree at threads={threads}")
         latency_rows = read_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv")
         for row in latency_rows:
             if row["source_type"] != "analytic_cost":
@@ -163,6 +180,7 @@ def validate_source_types(notes: list[str]) -> None:
         "fig_dpf_scaling.csv": {"microbenchmark"},
         "fig_dpf_phase_breakdown.csv": {"microbenchmark"},
         "fig_dpf_throughput_vs_n.csv": {"microbenchmark"},
+        "fig_dpf_thread_scaling.csv": {"microbenchmark"},
         "fig_ingestion_latency_vs_rate.csv": {"analytic_cost"},
         "fig_range_error_vs_epsilon.csv": {"monte_carlo"},
         "fig_sum_error_vs_epsilon.csv": {"monte_carlo"},

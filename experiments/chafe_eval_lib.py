@@ -33,7 +33,7 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str] | None = None)
                     keys.append(key)
         fieldnames = keys
     with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow(row)

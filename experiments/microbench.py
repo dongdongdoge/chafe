@@ -18,6 +18,7 @@ def platform_metadata() -> dict[str, str]:
         "platform_release": platform.release(),
         "platform_machine": platform.machine(),
         "python_version": platform.python_version(),
+        "cpu_count": str(os.cpu_count() or ""),
     }
 
 
@@ -122,7 +123,10 @@ def enrich_google_summary_row(row: dict[str, str]) -> dict:
         "log_n": int(row["log_n"]),
         "reports_per_repeat": int(row["reports_per_repeat"]),
         "repeats": int(row["repeats"]),
+        "threads": int(row.get("threads", "1")),
+        "cpu_acceleration": row.get("cpu_acceleration", ""),
         "checksum": row["checksum"],
+        "reports_per_second": 1000.0 / float(row["time_ms_per_report"]),
         "m": "",
         "rho": "",
         "M": "",
@@ -149,6 +153,8 @@ def enrich_google_breakdown_row(row: dict[str, str]) -> dict:
         "log_n": int(row["log_n"]),
         "reports_per_repeat": int(row["reports_per_repeat"]),
         "repeats": int(row["repeats"]),
+        "threads": int(row.get("threads", "1")),
+        "cpu_acceleration": row.get("cpu_acceleration", ""),
         "checksum": row["checksum"],
         "m": "",
         "rho": "",
@@ -166,7 +172,7 @@ def generate_google_dpf_microbench() -> list[dict] | None:
     binary = google_dpf_binary()
     if not binary.exists():
         return None
-    rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5"])
+    rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5", "--threads=1"])
     if len(rows) != 2:
         raise RuntimeError(f"unexpected Google DPF benchmark row count: {len(rows)}")
     enriched = [enrich_google_summary_row(row) for row in rows]
@@ -184,6 +190,7 @@ def generate_google_dpf_scaling() -> list[dict]:
                 f"--log_n={log_n}",
                 f"--reports={reports}",
                 f"--repeats={repeats}",
+                "--threads=1",
                 f"--seed={50_000 + log_n}",
             ]
         )
@@ -212,6 +219,8 @@ def generate_dpf_throughput_from_scaling(scaling_rows: list[dict] | None = None)
                 "log_n": row["log_n"],
                 "reports_per_repeat": row["reports_per_repeat"],
                 "repeats": row["repeats"],
+                "threads": row.get("threads", 1),
+                "cpu_acceleration": row.get("cpu_acceleration", ""),
                 "m": "",
                 "rho": "",
                 "M": "",
@@ -258,6 +267,17 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
         101,
         102,
         103,
+        200,
+        500,
+        1_000,
+        2_000,
+        2_500,
+        0.25 * service_rate,
+        0.50 * service_rate,
+        0.75 * service_rate,
+        0.90 * service_rate,
+        0.95 * service_rate,
+        0.98 * service_rate,
         0.995 * service_rate,
         0.999 * service_rate,
         0.9999 * service_rate,
@@ -290,6 +310,7 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
             200.0,
             500.0,
             1_000.0,
+            2_000.0,
             5_000.0,
             20_000.0,
         }
@@ -423,11 +444,50 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
 
 
 def generate_google_dpf_phase_breakdown() -> list[dict]:
-    raw_rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5", "--breakdown"])
+    raw_rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5", "--threads=1", "--breakdown"])
     if len(raw_rows) != 10:
         raise RuntimeError(f"unexpected Google DPF breakdown row count: {len(raw_rows)}")
     rows = [enrich_google_breakdown_row(row) for row in raw_rows]
     write_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv", rows)
+    return rows
+
+
+def thread_grid() -> list[int]:
+    cpu_count = max(1, os.cpu_count() or 1)
+    max_thread = min(8, cpu_count)
+    grid = {1, max_thread}
+    for value in [2, 4, 8]:
+        if value <= max_thread:
+            grid.add(value)
+    return sorted(grid)
+
+
+def generate_google_dpf_thread_scaling() -> list[dict]:
+    rows: list[dict] = []
+    for threads in thread_grid():
+        raw_rows = run_google_dpf(
+            [
+                "--log_n=12",
+                "--reports=32",
+                "--repeats=5",
+                f"--threads={threads}",
+                f"--seed={70_000 + threads}",
+            ]
+        )
+        if len(raw_rows) != 2:
+            raise RuntimeError(f"unexpected Google DPF thread-scaling row count for threads={threads}: {len(raw_rows)}")
+        rows.extend(enrich_google_summary_row(row) for row in raw_rows)
+
+    single_thread = {
+        row["method"]: float(row["time_ms_per_report"])
+        for row in rows
+        if int(float(row["threads"])) == 1
+    }
+    for row in rows:
+        baseline_ms = single_thread[row["method"]]
+        row["thread_speedup_vs_1"] = baseline_ms / float(row["time_ms_per_report"])
+        row["parallelism_model"] = "independent per-worker accumulators reduced after measurement"
+    write_csv(DATA_DIR / "fig_dpf_thread_scaling.csv", rows)
     return rows
 
 
@@ -455,6 +515,9 @@ def generate_numpy_proxy_microbench() -> list[dict]:
             "N": N,
             "reports_per_repeat": reports_per_repeat,
             "repeats": repeats,
+            "threads": 1,
+            "cpu_acceleration": "numpy_vectorized",
+            "reports_per_second": 1_000.0 / (product_mean * 1_000.0),
             "m": "",
             "rho": "",
             "M": "",
@@ -478,6 +541,9 @@ def generate_numpy_proxy_microbench() -> list[dict]:
             "N": N,
             "reports_per_repeat": reports_per_repeat,
             "repeats": repeats,
+            "threads": 1,
+            "cpu_acceleration": "numpy_vectorized",
+            "reports_per_second": 1_000.0 / (dual_mean * 1_000.0),
             "m": "",
             "rho": "",
             "M": "",
@@ -501,10 +567,12 @@ def generate_all() -> dict[str, int]:
     if google_dpf_binary().exists():
         scaling_rows = generate_google_dpf_scaling()
         breakdown_rows = generate_google_dpf_phase_breakdown()
+        thread_rows = generate_google_dpf_thread_scaling()
         throughput_rows = generate_dpf_throughput_from_scaling(scaling_rows)
         latency_rows = generate_ingestion_latency_model(scaling_rows)
         outputs["fig_dpf_scaling.csv"] = len(scaling_rows)
         outputs["fig_dpf_phase_breakdown.csv"] = len(breakdown_rows)
+        outputs["fig_dpf_thread_scaling.csv"] = len(thread_rows)
         outputs["fig_dpf_throughput_vs_n.csv"] = len(throughput_rows)
         outputs["fig_ingestion_latency_vs_rate.csv"] = len(latency_rows)
     return outputs
