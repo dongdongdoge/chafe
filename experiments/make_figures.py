@@ -182,25 +182,43 @@ def paired_line_figure(
     panels = []
     for panel, title in [("Synthetic Zipf", "Zipf"), ("Adult empirical bootstrap", "Adult")]:
         plots = []
+        show_legend = panel == "Synthetic Zipf"
         for idx, method in enumerate(methods):
             subset = [row for row in rows if row["panel"] == panel and row["method"] == method]
             if not subset:
                 continue
-            plots.append(
+            plot = (
                 "\\addplot+[" + LINE_STYLES[idx % len(LINE_STYLES)] + "] coordinates {"
                 + paired_coordinates(rows, panel, method, x_col, y_col)
-                + "};\n"
-                + f"\\addlegendentry{{{method}}}"
+                + "};"
             )
-        axis_extra = (
-            "height=3.05cm, title={" + title + "}, title style={font=\\scriptsize}, "
-            "legend style={font=\\tiny, fill=white, draw=black!20, at={(0.98,0.98)}, anchor=north east}"
-        )
+            if show_legend:
+                plot += "\n" + f"\\addlegendentry{{{method}}}"
+            plots.append(plot)
+        axis_opts = [
+            "scale only axis",
+            "width=0.30\\columnwidth",
+            "height=2.55cm",
+            "grid=both",
+            "grid style={gray!18}",
+            "major grid style={gray!25}",
+            "axis line style={black!70}",
+            "tick style={black!70}",
+            "tick label style={font=\\tiny}",
+            "label style={font=\\scriptsize}",
+            "title={" + title + "}",
+            "title style={font=\\scriptsize}",
+            "xlabel={" + xlabel + "}",
+            "ylabel={" + (ylabel if panel == "Synthetic Zipf" else "") + "}",
+            "legend style={font=\\tiny, fill=white, draw=black!15, at={(0.03,0.97)}, anchor=north west, cells={anchor=west}}",
+        ]
+        if panel != "Synthetic Zipf":
+            axis_opts.append("yticklabel=\\empty")
         if extra_axis:
-            axis_extra += ", " + extra_axis
-        panel_axis_options = axis_options("0.235\\textwidth", xlabel, ylabel, axis_extra)
+            axis_opts.append(extra_axis)
+        panel_axis_options = ",\n".join(axis_opts)
         panels.append(
-            f"""\\begin{{minipage}}{{0.238\\textwidth}}
+            f"""\\begin{{minipage}}{{0.49\\columnwidth}}
 \\centering
 \\begin{{tikzpicture}}
 \\begin{{axis}}[
