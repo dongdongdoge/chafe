@@ -15,8 +15,9 @@ row records its provenance through a `source_type` field.
 - The ingestion figures use a measured Google
   `distributed_point_functions` write-backend benchmark, plus analytic latency
   models derived from the measured eval-all service rate.  The benchmark
-  reports the worker-thread count and compile-time CPU acceleration label in
-  every CSV row.
+  uses `N=2^17` as the default large slot domain, extends the scaling curve to
+  `N=2^18`, and reports the worker-thread count and compile-time CPU
+  acceleration label in every CSV row.
 - Workload figures are Monte Carlo simulations with at least 30 seeds.  The
   default synthetic and real-data workload size is `m=100,000`.
 - The real-data workload uses a cleaned copy of the UCI Adult/Census Income
@@ -30,7 +31,10 @@ row records its provenance through a `source_type` field.
   validation checks, and the Google DPF build wrapper.
 - `data/`: CSV files for all figures and validation summaries.
 - `figures/`: generated TikZ/PGFPlots output directory.  Generated `.tex`
-  figures are ignored by Git and can be recreated from the scripts.
+  figures are ignored by Git and can be recreated from the scripts.  Dense
+  formula grids are retained in `data/*.csv`; the TikZ exporter thins plotted
+  coordinates so paper builds do not spend minutes compiling visually
+  indistinguishable points.
 - `datasets/adult/`: cleaned Adult workload input and dataset metadata.
 - `third_party/distributed_point_functions/`: vendored Google DPF source used
   by the ingestion microbenchmark.

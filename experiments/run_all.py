@@ -63,9 +63,12 @@ def summarize_outputs() -> str:
     sum_drop_016 = closest(sum_rows, "epsilon_prime", 0.16, "Drop")
     f1_drop_032 = closest(f1_rows, "epsilon_prime", 0.32, "Drop")
     f1_ideal_032 = closest(f1_rows, "epsilon_prime", 0.32, "IdealShuffle")
-    product_small = closest(scaling_rows, "N", 256, "Google DPF product-valued")
-    product_large = closest(scaling_rows, "N", 65_536, "Google DPF product-valued")
-    throughput_4096 = closest(throughput_rows, "N", 4_096, "Google DPF product-valued")
+    product_scaling_rows = [row for row in scaling_rows if row["method"] == "Google DPF product-valued"]
+    product_small = min(product_scaling_rows, key=lambda row: float(row["N"]))
+    product_large = max(product_scaling_rows, key=lambda row: float(row["N"]))
+    online_latency_rows = [row for row in latency_rows if row["method"] == "Chafe online DPF service"]
+    service_n = int(float(online_latency_rows[0]["N"])) if online_latency_rows else 2**17
+    throughput_service = closest(throughput_rows, "N", service_n, "Google DPF product-valued")
     chafe_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Chafe online DPF service")
     batch_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Collect-then-shuffle gate")
     phase_eval_product = next(
@@ -109,17 +112,17 @@ def summarize_outputs() -> str:
             ),
             (
                 f"- Google DPF product-valued scaling: {float(product_small['time_ms_per_report']):.3g} "
-                f"ms/report at N=256 and {float(product_large['time_ms_per_report']):.3g} "
+                f"ms/report at N={int(float(product_small['N']))} and {float(product_large['time_ms_per_report']):.3g} "
                 f"ms/report at N={int(float(product_large['N']))}."
             ),
             (
-                f"- At N=4096, product-valued DPF evaluation accounts for "
+                f"- At N={int(float(phase_total_product['N']))}, product-valued DPF evaluation accounts for "
                 f"{float(phase_eval_product['time_ms_per_report']) / float(phase_total_product['time_ms_per_report']):.1%} "
                 f"of measured per-report backend time."
             ),
             (
-                f"- The measured product-valued DPF service rate at N=4096 is "
-                f"{float(throughput_4096['reports_per_second']):.3g} reports/s. At arrival rate 40 reports/s, "
+                f"- The measured product-valued DPF service rate at N={service_n} is "
+                f"{float(throughput_service['reports_per_second']):.3g} reports/s. At arrival rate 40 reports/s, "
                 f"the analytic online service latency is {float(chafe_latency_40['avg_latency_seconds']):.3g} s, "
                 f"while collect-then-shuffle batch gating for m=1e6 is "
                 f"{float(batch_latency_40['avg_latency_seconds']):.3g} s."

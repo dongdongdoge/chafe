@@ -85,10 +85,16 @@ def validate_microbench(notes: list[str]) -> None:
         if float(row["time_ms_per_report"]) <= 0:
             raise AssertionError("microbenchmark time must be positive")
     if rows[0].get("benchmark") == "google_distributed_point_functions":
+        main_ns = {int(float(row["N"])) for row in rows}
+        if min(main_ns) < 100_000:
+            raise AssertionError(f"main Google DPF microbenchmark must use N>=100000, saw {sorted(main_ns)}")
         checksums = {row.get("checksum") for row in rows}
         if len(checksums) != 1:
             raise AssertionError("Google DPF product and dual-track reconstructions disagree")
         scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+        max_scaling_n = max(int(float(row["N"])) for row in scaling_rows)
+        if max_scaling_n < 100_000:
+            raise AssertionError(f"Google DPF scaling must include N>=100000, max N={max_scaling_n}")
         scaling_by_n: dict[str, list[dict[str, str]]] = defaultdict(list)
         for row in scaling_rows:
             if row["source_type"] != "microbenchmark":
@@ -143,6 +149,8 @@ def validate_microbench(notes: list[str]) -> None:
                 if float(row["backlog_growth_reports_per_s"]) <= 0:
                     raise AssertionError("unstable Chafe rows must report positive backlog growth")
             if row["method"] == "Chafe online DPF service" and row["stable"] == "true":
+                if int(float(row["N"])) < 100_000:
+                    raise AssertionError("ingestion latency model must use a measured service point with N>=100000")
                 if float(row["avg_latency_seconds"]) <= 0:
                     raise AssertionError("stable Chafe latency must be positive")
             if row["method"] == "Collect-then-shuffle gate":

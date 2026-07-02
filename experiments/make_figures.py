@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypeVar
 
 from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ensure_dirs, fnum, read_csv
 
+
+T = TypeVar("T")
 
 BLUE = "{rgb,255:red,37;green,99;blue,235}"
 TEAL = "{rgb,255:red,0;green,150;blue,136}"
@@ -39,6 +42,10 @@ BAR_STYLES = [
     f"draw={TEAL}, fill={TEAL_FILL}, line width=0.55pt",
 ]
 
+MAX_LINE_COORDS = 34
+MAX_SURFACE_RHO = 23
+MAX_SURFACE_TAU = 21
+
 
 def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
     opts = [
@@ -58,6 +65,7 @@ def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
         "tick style={black!55, line width=0.35pt}",
         "tick align=outside",
         "clip marker paths=true",
+        "filter discard warning=false",
         f"xlabel={{{xlabel}}}",
         f"ylabel={{{ylabel}}}",
     ]
@@ -66,7 +74,24 @@ def axis_options(width: str, xlabel: str, ylabel: str, extra: str = "") -> str:
     return ",\n".join(opts)
 
 
-def coordinates(rows: list[dict[str, str]], x_col: str, y_col: str) -> str:
+def thin_sequence(values: list[T], max_values: int | None) -> list[T]:
+    if max_values is None or len(values) <= max_values:
+        return values
+    if max_values < 2:
+        return values[:1]
+    indices = {
+        round(i * (len(values) - 1) / (max_values - 1))
+        for i in range(max_values)
+    }
+    return [values[i] for i in sorted(indices)]
+
+
+def coordinates(
+    rows: list[dict[str, str]],
+    x_col: str,
+    y_col: str,
+    max_points: int | None = MAX_LINE_COORDS,
+) -> str:
     pairs = []
     for row in rows:
         if row.get(x_col, "") == "" or row.get(y_col, "") == "":
@@ -75,6 +100,7 @@ def coordinates(rows: list[dict[str, str]], x_col: str, y_col: str) -> str:
     pairs = sorted(pairs)
     if not pairs:
         raise ValueError(f"no numeric coordinates for {x_col}/{y_col}")
+    pairs = thin_sequence(pairs, max_points)
     return " ".join(f"({fnum(x)},{fnum(y)})" for x, y in pairs)
 
 
@@ -134,8 +160,8 @@ def surface_coordinates(rows: list[dict[str, str]], method: str) -> tuple[str, i
     subset = [row for row in rows if row["method"] == method]
     if not subset:
         raise ValueError(f"surface has no rows for method {method}")
-    rhos = sorted({float(row["rho"]) for row in subset})
-    taus = sorted({float(row["tau"]) for row in subset})
+    rhos = thin_sequence(sorted({float(row["rho"]) for row in subset}), MAX_SURFACE_RHO)
+    taus = thin_sequence(sorted({float(row["tau"]) for row in subset}), MAX_SURFACE_TAU)
     by_key = {(float(row["rho"]), float(row["tau"])): float(row["epsilon"]) for row in subset}
     lines = []
     for tau in taus:
@@ -388,6 +414,8 @@ def ingestion_latency_figure() -> None:
     if not online or not batch or not overload or not crossover:
         raise ValueError("fig_ingestion_latency_vs_rate.csv is missing latency-model rows")
     service_rate = float(online[0]["service_rate_reports_per_s"])
+    service_n = int(float(online[0]["N"]))
+    service_log_n = int(float(online[0]["log_n"]))
     cross_x = float(crossover[0]["arrival_rate_reports_per_s"])
     cross_y = float(crossover[0]["avg_latency_seconds"])
     opts = axis_options(
@@ -418,7 +446,7 @@ def ingestion_latency_figure() -> None:
 \\node[font=\\tiny, rotate=90, anchor=south] at (axis cs:{fnum(service_rate)},2e-3) {{service rate}};
 \\end{{axis}}
 \\end{{tikzpicture}}
-\\caption{{Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{{12}}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. The vertical line marks the measured single-thread service rate. The dotted overload curve is not steady-state latency; it is the time to accumulate one epoch of backlog after arrivals exceed service capacity.}}
+\\caption{{Analytic latency model combining the measured Google DPF eval-all service rate at $N=2^{{{service_log_n}}}={service_n}$ with an M/D/1 queue, compared with collect-then-shuffle batch gating for $m=10^6$. The vertical line marks the measured single-thread service rate. The dotted overload curve is not steady-state latency; it is the time to accumulate one epoch of backlog after arrivals exceed service capacity.}}
 \\label{{fig:ingestion-latency-vs-rate}}
 \\end{{figure}}
 """
@@ -428,11 +456,13 @@ def ingestion_latency_figure() -> None:
 def bar_figure_microbench() -> None:
     rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
     vals = {row["method"]: float(row["time_ms_per_report"]) for row in rows}
+    benchmark_n = int(float(rows[0]["N"]))
+    benchmark_log_n = int(float(rows[0]["log_n"]))
     product_name = "Google DPF product-valued" if "Google DPF product-valued" in vals else "Product-valued kernel"
     dual_name = "Google DPF dual-track" if "Google DPF dual-track" in vals else "Dual-track kernel"
     benchmark = rows[0].get("benchmark", "")
     if benchmark == "google_distributed_point_functions":
-        caption = "Measured Google distributed-point-functions backend for product-valued versus dual-track hidden-slot ingestion. The benchmark generates DPF keys, evaluates both server keys over the full slot domain, accumulates shares, and verifies reconstruction."
+        caption = f"Measured Google distributed-point-functions backend for product-valued versus dual-track hidden-slot ingestion at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. The benchmark generates DPF keys, evaluates both server keys over the full slot domain, accumulates shares, and verifies reconstruction."
     else:
         caption = "Measured NumPy dense DPF-expansion kernel proxy for product-valued versus dual-track ingestion. The benchmark measures wall-clock traversal and pseudorandom expansion cost per report; it is not a full DPF implementation throughput claim."
     opts = axis_options(
@@ -461,6 +491,8 @@ def bar_figure_microbench() -> None:
 
 def bar_figure_dpf_phase_breakdown() -> None:
     rows = read_csv(DATA_DIR / "fig_dpf_phase_breakdown.csv")
+    benchmark_n = int(float(rows[0]["N"]))
+    benchmark_log_n = int(float(rows[0]["log_n"]))
     phase_names = {
         "keygen": "Keygen",
         "context": "Ctx",
@@ -495,7 +527,7 @@ def bar_figure_dpf_phase_breakdown() -> None:
 \\addlegendentry{{Dual}}
 \\end{{axis}}
 \\end{{tikzpicture}}
-\\caption{{Measured phase breakdown for the Google DPF write backend at $N=2^{{12}}$. Each bar is wall-clock time per report for key generation, evaluation-context construction, full-domain DPF evaluation, and share accumulation.}}
+\\caption{{Measured phase breakdown for the Google DPF write backend at $N=2^{{{benchmark_log_n}}}={benchmark_n}$. Each bar is wall-clock time per report for key generation, evaluation-context construction, full-domain DPF evaluation, and share accumulation.}}
 \\label{{fig:dpf-phase-breakdown}}
 \\end{{figure}}
 """
@@ -657,7 +689,7 @@ def generate_all() -> dict[str, int]:
             "xlabel": "worker threads",
             "ylabel": "reports/s",
             "methods": ["Google DPF product-valued", "Google DPF dual-track"],
-            "caption": "Measured thread scaling of the Google DPF write backend at $N=2^{12}$. Each worker evaluates independent report batches into private accumulators, followed by deterministic share reduction; the CSV records whether the binary was compiled with AES-NI, ARM crypto, or portable code.",
+            "caption": "Measured thread scaling of the Google DPF write backend at $N=2^{17}=131072$. Each worker evaluates independent report batches into private accumulators, followed by deterministic share reduction; the CSV records whether the binary was compiled with AES-NI, ARM crypto, or portable code.",
             "label": "fig:dpf-thread-scaling",
             "extra_axis": "xmin=0.8, ymin=0",
         },

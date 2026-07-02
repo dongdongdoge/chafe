@@ -12,6 +12,11 @@ import numpy as np
 from chafe_eval_lib import DATA_DIR, ROOT, mean_and_se, read_csv, write_csv
 
 
+DEFAULT_DPF_LOG_N = 17
+DEFAULT_DPF_N = 1 << DEFAULT_DPF_LOG_N
+SCALING_LOG_NS = [12, 14, 16, 17, 18]
+
+
 def platform_metadata() -> dict[str, str]:
     return {
         "platform_system": platform.system(),
@@ -172,7 +177,15 @@ def generate_google_dpf_microbench() -> list[dict] | None:
     binary = google_dpf_binary()
     if not binary.exists():
         return None
-    rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5", "--threads=1"])
+    rows = run_google_dpf(
+        [
+            f"--log_n={DEFAULT_DPF_LOG_N}",
+            "--reports=4",
+            "--repeats=3",
+            "--threads=1",
+            f"--seed={40_000 + DEFAULT_DPF_LOG_N}",
+        ]
+    )
     if len(rows) != 2:
         raise RuntimeError(f"unexpected Google DPF benchmark row count: {len(rows)}")
     enriched = [enrich_google_summary_row(row) for row in rows]
@@ -182,9 +195,9 @@ def generate_google_dpf_microbench() -> list[dict] | None:
 
 def generate_google_dpf_scaling() -> list[dict]:
     rows: list[dict] = []
-    for log_n in [8, 10, 12, 14, 16]:
-        reports = 8 if log_n <= 14 else 4
-        repeats = 5 if log_n <= 14 else 3
+    for log_n in SCALING_LOG_NS:
+        reports = 8 if log_n <= 14 else 4 if log_n == 16 else 3 if log_n == 17 else 2
+        repeats = 5 if log_n <= 14 else 3 if log_n <= 17 else 2
         raw_rows = run_google_dpf(
             [
                 f"--log_n={log_n}",
@@ -242,11 +255,13 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
     if scaling_rows is None:
         scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
     product_rows = [
-        row for row in scaling_rows if row["method"] == "Google DPF product-valued" and int(float(row["N"])) == 4096
+        row
+        for row in scaling_rows
+        if row["method"] == "Google DPF product-valued" and int(float(row["N"])) == DEFAULT_DPF_N
     ]
     if not product_rows:
         product_rows = [row for row in scaling_rows if row["method"] == "Google DPF product-valued"]
-    service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - 4096))
+    service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - DEFAULT_DPF_N))
     service_ms = float(service_row["time_ms_per_report"])
     service_rate = 1000.0 / service_ms
     service_seconds = service_ms / 1000.0
@@ -444,7 +459,16 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
 
 
 def generate_google_dpf_phase_breakdown() -> list[dict]:
-    raw_rows = run_google_dpf(["--log_n=12", "--reports=8", "--repeats=5", "--threads=1", "--breakdown"])
+    raw_rows = run_google_dpf(
+        [
+            f"--log_n={DEFAULT_DPF_LOG_N}",
+            "--reports=3",
+            "--repeats=3",
+            "--threads=1",
+            "--breakdown",
+            f"--seed={60_000 + DEFAULT_DPF_LOG_N}",
+        ]
+    )
     if len(raw_rows) != 10:
         raise RuntimeError(f"unexpected Google DPF breakdown row count: {len(raw_rows)}")
     rows = [enrich_google_breakdown_row(row) for row in raw_rows]
@@ -467,9 +491,9 @@ def generate_google_dpf_thread_scaling() -> list[dict]:
     for threads in thread_grid():
         raw_rows = run_google_dpf(
             [
-                "--log_n=12",
-                "--reports=32",
-                "--repeats=5",
+                f"--log_n={DEFAULT_DPF_LOG_N}",
+                "--reports=8",
+                "--repeats=3",
                 f"--threads={threads}",
                 f"--seed={70_000 + threads}",
             ]
@@ -492,7 +516,7 @@ def generate_google_dpf_thread_scaling() -> list[dict]:
 
 
 def generate_numpy_proxy_microbench() -> list[dict]:
-    N = 65_536
+    N = DEFAULT_DPF_N
     reports_per_repeat = 64
     repeats = 9
     reports = np.arange(reports_per_repeat, dtype=np.uint64) % np.uint64(251)
