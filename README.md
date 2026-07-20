@@ -33,6 +33,9 @@ python experiments/fetch_modern_utility_datasets.py
 ## DPF Backends
 
 Google DPF is vendored under `third_party/distributed_point_functions/`.
+Chafe's packed64 path stores the occupancy counter and payload share in one
+64-bit DPF value, avoiding the extra pass used by tuple-product or dual-track
+baselines.
 GPU-DPF is vendored under `third_party/GPU-DPF/`.
 
 ```bash
