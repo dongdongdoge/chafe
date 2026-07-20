@@ -1,42 +1,28 @@
 # Chafe Shuffle Artifact
 
-This repository contains the evaluation artifact for Chafe Shuffle: experiment
-scripts, checked-in CSV evidence, processed workload inputs, and the vendored
-Google DPF backend used by the ingestion benchmark.
-
-## Contents
-
-- `experiments/`: formula generators, exact accountants, workload simulators,
-  system benchmarks, figure builders, and validation checks.
-- `data/`: CSVs used by the evaluation. Rows carry provenance fields such as
-  `source_type`, `privacy_source_type`, or `utility_source_type`.
-- `datasets/`: compact processed inputs and metadata. Raw upstream downloads
-  are excluded from git.
-- `third_party/distributed_point_functions/`: Google DPF source plus the Chafe
-  packed64 write-backend benchmark.
+This repository contains the runnable Chafe Shuffle evaluation artifact:
+experiment scripts, checked-in CSV outputs, processed dataset snapshots, and
+vendored DPF backends.
 
 ## Setup
-
-Use Python 3.9 or newer:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-The Python checks do not require network access. Re-running the Google DPF
-microbenchmark additionally requires Bazel and a C++ toolchain.
+## Run
 
-## Data
+```bash
+python experiments/artifact_check.py
+```
 
-The repository includes processed snapshots needed for offline reruns:
+This checks that the artifact files are present and that the checked-in outputs
+are internally consistent.
 
-- `datasets/adult/adult_clean.csv`
-- `datasets/covertype/covertype_selected.csv`
-- `datasets/acs2024/utility.npz`
-- `datasets/nyc_tlc2024/utility.npz`
-- `datasets/amazon_reviews_2023/utility.npz`
+## Datasets
 
-To rebuild them from public sources, use:
+Processed inputs are included under `datasets/`. To rebuild them from public
+sources, run:
 
 ```bash
 python experiments/fetch_adult_dataset.py
@@ -44,33 +30,13 @@ python experiments/fetch_covertype_dataset.py
 python experiments/fetch_modern_utility_datasets.py
 ```
 
-Metadata in each dataset directory records the upstream source and checksum
-where applicable.
+## DPF Backends
 
-## Reproduce
-
-Run the non-destructive artifact check:
-
-```bash
-python experiments/artifact_check.py
-```
-
-Regenerate formulas, exact-accountant rows, analytic models, validation, and
-TikZ figures while retaining checked-in measured and Monte Carlo CSVs:
-
-```bash
-python experiments/run_all.py --skip-microbench --skip-utility
-```
-
-Rerun all local experiments, including machine-specific measurements:
+Google DPF is vendored under `third_party/distributed_point_functions/`.
+GPU-DPF is vendored under `third_party/GPU-DPF/`.
 
 ```bash
 python experiments/build_google_dpf.py
-python experiments/run_all.py
-```
-
-Check or normalize external GPU-DPF context rows:
-
-```bash
-python experiments/gpu_dpf_interface.py --target-n 131072
+python experiments/build_gpu_dpf.py --check-only
+python experiments/gpu_dpf_interface.py --print-contract
 ```

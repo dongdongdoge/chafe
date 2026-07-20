@@ -11,7 +11,7 @@ CGP paper-derived full-shuffle and author-derived payload-only grids passed form
 Measured two-process epoch-close scaling passed complete-grid, full-release correctness, byte-accounting, platform, and localhost-scope checks.
 Finite-burst latency passed dimensions, queue identities, capacity regimes, CGP crossover, and provenance checks for CPU, external-GPU, and CGP inputs.
 Proxy-calibrated Synthetic/Adult/Covertype releases passed the 54-row Pure IdealShuffle/Padded Ideal/Drop grid, method-specific release and dummy semantics, paired metrics, absolute-utility trends, tight-target gains, Adult crossovers, and non-central-DP scope checks.
-Source-type checks passed for all figure CSVs.
+Source-type checks passed for all checked CSVs.
 Monte Carlo replicate-count checks passed.
 Full length-M Drop/Pool releases, hidden dummy labels, exact finite occupancy corrections, and three public dummy laws passed validation.
 Nonzero-dummy padding sweep passed complete-release, expected-mass correction, finite-occupancy, and naive-bias calibration checks for Drop count and Pool sum.
@@ -27,4 +27,4 @@ Exact-certified binary utility passed full length-M view, rational family-budget
 Large pairwise exact-law calibration reached m=100000 with conservative profile slack and complete-release utility; heterogeneous real-data rows remain explicitly non-central-DP transferred-reference sensitivities.
 Modern utility covers one seeded synthetic workload, three frozen public snapshots, and 100 common-random-number trials per configuration; all 18 pair calibrations hit their hockey-stick targets, and Pool preserves all 1,200 randomized sums while using a larger accounted Laplace epsilon0 (max occupancy 8).
 At fixed local epsilon0=8, Drop has 1.74--2.28x ideal range error and 0.014--0.114 lower top-50 F1; Pool equals padded ideal in all 400 bounded-sum pairs (max occupancy 8).
-Artifact documentation covers core commands, processed datasets, generated-figure scope, and provenance labels without stale claims.
+Artifact documentation covers the minimal run path, dataset rebuild scripts, and vendored DPF backends without stale claims.

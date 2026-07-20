@@ -5,7 +5,7 @@ from collections import defaultdict
 from fractions import Fraction
 
 import gpu_dpf_interface
-from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ROOT, read_csv
+from chafe_eval_lib import DATA_DIR, ROOT, read_csv
 
 
 def floats(rows: list[dict[str, str]], key: str) -> list[float]:
@@ -350,20 +350,6 @@ def validate_microbench(notes: list[str]) -> None:
                 row["required_node_equivalents_for_20k_at_target_utilization"]
             )) != required_planning:
                 raise AssertionError("joint scaling planning node requirement is inconsistent")
-
-        ingestion_figure_path = FIGURE_DIR / "fig_ingestion_cost_summary.tex"
-        if ingestion_figure_path.is_file():
-            ingestion_figure = ingestion_figure_path.read_text()
-            forbidden_projection_tokens = ("0.97", "modeled_anchor", "model_extrapolation")
-            if any(token in ingestion_figure for token in forbidden_projection_tokens):
-                raise AssertionError("active ingestion figure contains an unsupported scaling model")
-            required_figure_tokens = (
-                "ideal linear projection",
-                "combined-work CPU equivalents",
-                "y explicit",
-            )
-            if any(token not in ingestion_figure for token in required_figure_tokens):
-                raise AssertionError("active ingestion figure lost projection or error-bar disclosure")
 
         gpu_rows = gpu_dpf_interface.load_rows(DATA_DIR / "fig_gpu_dpf_external.csv")
         expected_gpu = {16_384: 52_536, 65_536: 15_392, 262_144: 3_967, 1_048_576: 923}
@@ -1379,7 +1365,7 @@ def validate_source_types(notes: list[str]) -> None:
         seen = {row["source_type"] for row in rows}
         if not seen <= allowed:
             raise AssertionError(f"{filename} has unexpected source types {seen}; expected subset of {allowed}")
-    notes.append("Source-type checks passed for all figure CSVs.")
+    notes.append("Source-type checks passed for all checked CSVs.")
 
 
 def validate_monte_carlo_replicates(notes: list[str]) -> None:
@@ -2476,30 +2462,6 @@ def validate_modern_utility(notes: list[str]) -> None:
     summary = read_csv(DATA_DIR / "fig_modern_utility.csv")
     if len(calibrations) != 18 or len(replicates) != 7_200 or len(summary) != 72:
         raise AssertionError("modern utility grid is incomplete")
-    active_figure_path = FIGURE_DIR / "fig_utility_full_release_summary.tex"
-    if active_figure_path.is_file():
-        active_figure = active_figure_path.read_text()
-        required_figure_markers = {
-            "ACS 2024",
-            "TLC 2024",
-            "Reviews'23",
-            "declared-pair",
-            "Pool: larger",
-        }
-        missing_markers = required_figure_markers - {
-            marker for marker in required_figure_markers if marker in active_figure
-        }
-        if missing_markers:
-            raise AssertionError(
-                "active utility figure is not the modern four-workload composition; "
-                f"missing {sorted(missing_markers)}"
-            )
-        if any(marker in active_figure for marker in {"Adult", "Covertype", "design scale"}):
-            raise AssertionError(
-                "legacy proxy utility panels overwrote the modern paper figure"
-            )
-    else:
-        notes.append("Modern utility TikZ figure is absent; artifact check validated CSV evidence only.")
     if {row["dataset"] for row in summary} != {
         "Synthetic",
         "ACS 2024",
@@ -2699,22 +2661,23 @@ def validate_artifact_documentation(notes: list[str]) -> None:
         raise AssertionError(f"artifact documentation contains stale claims: {stale}")
     required_readme = {
         "experiments/artifact_check.py",
-        "experiments/run_all.py --skip-microbench --skip-utility",
+        "experiments/build_gpu_dpf.py",
         "experiments/gpu_dpf_interface.py",
         "experiments/fetch_adult_dataset.py",
         "experiments/fetch_covertype_dataset.py",
         "experiments/fetch_modern_utility_datasets.py",
+        "third_party/distributed_point_functions",
+        "third_party/GPU-DPF",
     }
     missing = sorted(token for token in required_readme if token not in readme)
     if missing:
         raise AssertionError(f"artifact README is missing core artifact markers: {missing}")
     required_artifact = {
         "python experiments/artifact_check.py",
-        "python experiments/run_all.py --skip-microbench --skip-utility",
-        "python experiments/build_artifact_bundle.py",
-        "Evidence Map",
-        "Dataset Sources",
-        "CSV provenance",
+        "third_party/distributed_point_functions/",
+        "third_party/GPU-DPF/",
+        "experiments/build_gpu_dpf.py",
+        "experiments/gpu_dpf_interface.py",
     }
     missing = sorted(token for token in required_artifact if token not in artifact)
     if missing:
@@ -2726,8 +2689,8 @@ def validate_artifact_documentation(notes: list[str]) -> None:
         if not (ROOT / relative).is_file():
             raise AssertionError(f"artifact release helper is missing: {relative}")
     notes.append(
-        "Artifact documentation covers core commands, processed datasets, "
-        "generated-figure scope, and provenance labels without stale claims."
+        "Artifact documentation covers the minimal run path, dataset rebuild "
+        "scripts, and vendored DPF backends without stale claims."
     )
 
 

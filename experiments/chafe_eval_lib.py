@@ -11,13 +11,11 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
-FIGURE_DIR = ROOT / "figures"
 DATASET_DIR = ROOT / "datasets"
 
 
 def ensure_dirs() -> None:
     DATA_DIR.mkdir(exist_ok=True)
-    FIGURE_DIR.mkdir(exist_ok=True)
     DATASET_DIR.mkdir(exist_ok=True)
 
 

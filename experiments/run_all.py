@@ -4,7 +4,7 @@ import argparse
 import csv
 from pathlib import Path
 
-from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ensure_dirs, read_csv
+from chafe_eval_lib import DATA_DIR, ensure_dirs, read_csv
 
 import accountant_scaling_benchmark
 import exact_drop_accountant
@@ -17,7 +17,6 @@ import full_release_real_utility
 import generate_formula_data
 import generic_exact_accountant_validation
 import large_exact_real_utility
-import make_figures
 import microbench
 import packed64_safety
 import pool_robust_mean_utility
@@ -37,7 +36,6 @@ import external_gpu_dpf
 import finite_burst_latency
 import modern_data_utility
 import modern_fixed_eps0_utility
-import make_modern_utility_figure
 
 
 def closest(rows: list[dict[str, str]], key: str, value: float, method: str | None = None) -> dict[str, str]:
@@ -342,28 +340,24 @@ def run(skip_utility: bool = False, skip_microbench: bool = False) -> None:
         outputs.update(modern_data_utility.generate_all())
         outputs.update(modern_fixed_eps0_utility.generate_all())
     else:
-        print("Skipping utility simulations by request; workload figures will not be regenerated.")
+        print("Skipping utility simulations by request; existing workload CSVs are retained.")
     gpu_rows = external_gpu_dpf.generate()
     outputs["fig_gpu_dpf_external.csv"] = len(gpu_rows)
     outputs.update(finite_burst_latency.generate_all())
-    outputs.update(make_figures.generate_all())
-    outputs.update(make_modern_utility_figure.generate_all())
     notes = validate_results.validate_all()
 
     print("Generated CSV row counts:")
     for name, rows in sorted(outputs.items()):
         print(f"- {name}: {rows}")
-    print_file_list("Generated figures:", FIGURE_DIR, ".tex")
     print_file_list("Generated CSVs:", DATA_DIR, ".csv")
     print("Validation:")
     for note in notes:
         print(f"- {note}")
-    print(summarize_outputs())
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--skip-utility", action="store_true", help="regenerate formula/exact/microbench figures only")
+    parser.add_argument("--skip-utility", action="store_true", help="retain existing workload CSVs")
     parser.add_argument(
         "--skip-microbench",
         action="store_true",

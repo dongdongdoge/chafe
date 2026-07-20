@@ -17,8 +17,8 @@ REQUIRED_PATHS = (
     "requirements.txt",
     "experiments/run_all.py",
     "experiments/validate_results.py",
+    "experiments/build_gpu_dpf.py",
     "experiments/gpu_dpf_interface.py",
-    "experiments/make_modern_utility_figure.py",
     "datasets/adult/adult_clean.csv",
     "datasets/adult/metadata.json",
     "datasets/covertype/covertype_selected.csv",
@@ -40,6 +40,10 @@ REQUIRED_PATHS = (
     "datasets/amazon_reviews_2023/utility.npz",
     "datasets/amazon_reviews_2023/metadata.json",
     "third_party/distributed_point_functions/LICENSE",
+    "third_party/GPU-DPF/LICENSE",
+    "third_party/GPU-DPF/VENDORED_COMMIT",
+    "third_party/GPU-DPF/dpf_base/dpf.cc",
+    "third_party/GPU-DPF/dpf_gpu/dpf_benchmark.cu",
 )
 
 
@@ -54,8 +58,8 @@ def parse_args() -> argparse.Namespace:
         "--regenerate-software",
         action="store_true",
         help=(
-            "regenerate formulas, exact-accountant rows, analytic models, and "
-            "figures while retaining measured and Monte Carlo CSVs"
+            "regenerate deterministic CSV outputs while retaining measured "
+            "and Monte Carlo CSVs"
         ),
     )
     parser.add_argument(

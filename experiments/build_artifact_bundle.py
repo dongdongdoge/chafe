@@ -63,14 +63,14 @@ def collect_files(root: Path = ROOT) -> list[Path]:
     for folder, suffixes in (
         ("experiments", {".py", ".md"}),
         ("data", {".csv", ".txt"}),
-        ("figures", {".tex"}),
     ):
         for path in (root / folder).rglob("*"):
             if path.suffix in suffixes and is_release_file(path):
                 files.add(path)
-    for path in (root / "third_party" / "distributed_point_functions").rglob("*"):
-        if is_release_file(path):
-            files.add(path)
+    for third_party_name in ("distributed_point_functions", "GPU-DPF"):
+        for path in (root / "third_party" / third_party_name).rglob("*"):
+            if is_release_file(path):
+                files.add(path)
     return sorted(files, key=lambda path: path.relative_to(root).as_posix())
 
 
