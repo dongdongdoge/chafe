@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import os
 import platform
 import subprocess
@@ -14,10 +15,13 @@ from chafe_eval_lib import DATA_DIR, ROOT, mean_and_se, read_csv, write_csv
 
 DEFAULT_DPF_LOG_N = 17
 DEFAULT_DPF_N = 1 << DEFAULT_DPF_LOG_N
+LATENCY_EPOCH_M = 100_000
 SCALING_LOG_NS = [12, 14, 16, 17, 18]
 PACKED_METHOD = "Google DPF packed64"
 TUPLE_METHOD = "Google DPF tuple product"
 DUAL_METHOD = "Google DPF dual-track"
+CLARION_SHUFFLE_ENV = "CLARION_SHUFFLE_SECONDS_AT_100K"
+DEFAULT_CLARION_SHUFFLE_SECONDS_AT_100K = 5.0
 
 
 def platform_metadata() -> dict[str, str]:
@@ -124,6 +128,8 @@ def enrich_google_summary_row(row: dict[str, str]) -> dict:
         "method": row["method"],
         "time_ms_per_report": float(row["time_ms_per_report"]),
         "standard_error_ms": float(row["standard_error_ms"]),
+        "p50_ms_per_report": float(row.get("p50_ms_per_report", row["time_ms_per_report"])),
+        "p95_ms_per_report": float(row.get("p95_ms_per_report", row["time_ms_per_report"])),
         "normalized_expansion_work": float(row["normalized_expansion_work"]),
         "time_ratio_vs_packed": float(time_ratio),
         "speedup_vs_product": float(time_ratio),
@@ -136,6 +142,9 @@ def enrich_google_summary_row(row: dict[str, str]) -> dict:
         "threads": int(row.get("threads", "1")),
         "cpu_acceleration": row.get("cpu_acceleration", ""),
         "checksum": row["checksum"],
+        "packed_share_field_extraction_verified": str(
+            row["method"] == PACKED_METHOD
+        ).lower(),
         "reports_per_second": 1000.0 / float(row["time_ms_per_report"]),
         "m": "",
         "rho": "",
@@ -145,6 +154,8 @@ def enrich_google_summary_row(row: dict[str, str]) -> dict:
         "delta": "",
         "decoder": "google_dpf_ingestion_kernel",
         "build_target": "//chafe:google_dpf_write_benchmark",
+        "timed_scope": "client key generation, both server evaluations and accumulation in one process, worker-array reduction, and reconstruction verification",
+        "deployment_scope": "combined-work single-process kernel; not a two-server network deployment",
         **platform_metadata(),
     }
 
@@ -155,6 +166,8 @@ def enrich_google_breakdown_row(row: dict[str, str]) -> dict:
         "phase": row["phase"],
         "time_ms_per_report": float(row["time_ms_per_report"]),
         "standard_error_ms": float(row["standard_error_ms"]),
+        "p50_ms_per_report": float(row.get("p50_ms_per_report", row["time_ms_per_report"])),
+        "p95_ms_per_report": float(row.get("p95_ms_per_report", row["time_ms_per_report"])),
         "key_bytes_per_report": float(row["key_bytes_per_report"]),
         "normalized_expansion_work": float(row["normalized_expansion_work"]),
         "source_type": row["source_type"],
@@ -166,6 +179,9 @@ def enrich_google_breakdown_row(row: dict[str, str]) -> dict:
         "threads": int(row.get("threads", "1")),
         "cpu_acceleration": row.get("cpu_acceleration", ""),
         "checksum": row["checksum"],
+        "packed_share_field_extraction_verified": str(
+            row["method"] == PACKED_METHOD
+        ).lower(),
         "m": "",
         "rho": "",
         "M": "",
@@ -174,6 +190,7 @@ def enrich_google_breakdown_row(row: dict[str, str]) -> dict:
         "delta": "",
         "decoder": "google_dpf_ingestion_kernel",
         "build_target": "//chafe:google_dpf_write_benchmark",
+        "timed_scope": "phase timer inside the combined-work single-process kernel; total additionally includes worker-array reduction and reconstruction verification",
         **platform_metadata(),
     }
 
@@ -185,8 +202,8 @@ def generate_google_dpf_microbench() -> list[dict] | None:
     rows = run_google_dpf(
         [
             f"--log_n={DEFAULT_DPF_LOG_N}",
-            "--reports=4",
-            "--repeats=3",
+            "--reports=64",
+            "--repeats=7",
             "--threads=1",
             f"--seed={40_000 + DEFAULT_DPF_LOG_N}",
         ]
@@ -201,8 +218,8 @@ def generate_google_dpf_microbench() -> list[dict] | None:
 def generate_google_dpf_scaling() -> list[dict]:
     rows: list[dict] = []
     for log_n in SCALING_LOG_NS:
-        reports = 8 if log_n <= 14 else 4 if log_n == 16 else 3 if log_n == 17 else 2
-        repeats = 5 if log_n <= 14 else 3 if log_n <= 17 else 2
+        reports = 32 if log_n <= 14 else 16 if log_n == 16 else 12 if log_n == 17 else 8
+        repeats = 7 if log_n <= 14 else 5
         raw_rows = run_google_dpf(
             [
                 f"--log_n={log_n}",
@@ -231,6 +248,8 @@ def generate_dpf_throughput_from_scaling(scaling_rows: list[dict] | None = None)
                 "reports_per_second": 1000.0 / time_ms,
                 "time_ms_per_report": time_ms,
                 "standard_error_ms": row["standard_error_ms"],
+                "p50_ms_per_report": row.get("p50_ms_per_report", row["time_ms_per_report"]),
+                "p95_ms_per_report": row.get("p95_ms_per_report", row["time_ms_per_report"]),
                 "time_ratio_vs_packed": row.get("time_ratio_vs_packed", row.get("speedup_vs_product", "")),
                 "speedup_vs_product": row.get("speedup_vs_product", ""),
                 "source_type": "microbenchmark",
@@ -258,9 +277,27 @@ def generate_dpf_throughput_from_scaling(scaling_rows: list[dict] | None = None)
     return rows
 
 
-def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> list[dict]:
-    if scaling_rows is None:
-        scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+def clarion_shuffle_seconds(epoch_m: int) -> float | None:
+    value = os.environ.get(CLARION_SHUFFLE_ENV, "").strip()
+    seconds_at_100k = DEFAULT_CLARION_SHUFFLE_SECONDS_AT_100K if not value else float(value)
+    if seconds_at_100k < 0:
+        raise ValueError(f"{CLARION_SHUFFLE_ENV} must be non-negative")
+    return seconds_at_100k * (epoch_m / 100_000.0)
+
+
+def select_latency_service_row(
+    scaling_rows: list[dict],
+    thread_rows: list[dict] | None,
+) -> tuple[dict, str]:
+    candidates: list[dict] = []
+    if thread_rows is not None:
+        candidates = [
+            row
+            for row in thread_rows
+            if row["method"] == PACKED_METHOD and int(float(row["N"])) == DEFAULT_DPF_N
+        ]
+    if candidates:
+        return max(candidates, key=lambda row: float(row["reports_per_second"])), "fig_dpf_thread_scaling.csv"
     product_rows = [
         row
         for row in scaling_rows
@@ -268,11 +305,26 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
     ]
     if not product_rows:
         product_rows = [row for row in scaling_rows if row["method"] == PACKED_METHOD]
-    service_row = min(product_rows, key=lambda row: abs(int(float(row["N"])) - DEFAULT_DPF_N))
+    return min(product_rows, key=lambda row: abs(int(float(row["N"])) - DEFAULT_DPF_N)), "fig_dpf_scaling.csv"
+
+
+def generate_ingestion_latency_model(
+    scaling_rows: list[dict] | None = None,
+    thread_rows: list[dict] | None = None,
+) -> list[dict]:
+    if scaling_rows is None:
+        scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+    if thread_rows is None and (DATA_DIR / "fig_dpf_thread_scaling.csv").exists():
+        thread_rows = read_csv(DATA_DIR / "fig_dpf_thread_scaling.csv")
+    service_row, service_source = select_latency_service_row(scaling_rows, thread_rows)
     service_ms = float(service_row["time_ms_per_report"])
     service_rate = 1000.0 / service_ms
     service_seconds = service_ms / 1000.0
-    epoch_m = 1_000_000
+    epoch_m = LATENCY_EPOCH_M
+    service_n = int(float(service_row["N"]))
+    service_threads = int(float(service_row.get("threads", "1") or "1"))
+    service_rho = epoch_m / service_n
+    clarion_seconds = clarion_shuffle_seconds(epoch_m)
     stable_rates = [
         1,
         2,
@@ -345,15 +397,20 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
     def batch_delay(arrival_rate: float) -> float:
         return (epoch_m - 1.0) / (2.0 * arrival_rate)
 
+    def collect_shuffle_delay(arrival_rate: float) -> float:
+        if clarion_seconds is None:
+            return batch_delay(arrival_rate)
+        return batch_delay(arrival_rate) + clarion_seconds
+
     left, right = 0.99 * service_rate, (1.0 - 1e-12) * service_rate
     for _ in range(120):
         mid = 0.5 * (left + right)
-        if md1_latency(mid) < batch_delay(mid):
+        if md1_latency(mid) < collect_shuffle_delay(mid):
             left = mid
         else:
             right = mid
     crossover_rate = right
-    crossover_delay = batch_delay(crossover_rate)
+    crossover_delay = collect_shuffle_delay(crossover_rate)
     rows: list[dict] = []
     for arrival_rate in sorted({float(rate) for rate in stable_rates if rate < service_rate}):
         utilization = arrival_rate / service_rate
@@ -370,17 +427,19 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "method": "Chafe online DPF service",
                 "source_type": "analytic_cost",
                 "benchmark": "md1_queue_from_measured_google_dpf",
-                "N": int(float(service_row["N"])),
+                "N": service_n,
                 "log_n": service_row["log_n"],
                 "m": epoch_m,
-                "rho": "",
+                "rho": service_rho,
                 "M": "",
                 "tau": "",
                 "eps0": "",
                 "delta": "",
                 "decoder": "hidden_slot_online",
-                "derived_from": "fig_dpf_scaling.csv",
-                "model": "M/D/1 mean sojourn time; unstable rows record backlog growth",
+                "threads": service_threads,
+                "shuffle_seconds": "",
+                "derived_from": service_source,
+                "model": "M/D/1 mean sojourn time from measured multi-worker service rate; unstable rows record backlog growth",
             }
         )
     for arrival_rate in sorted({float(rate) for rate in overload_rates if rate > service_rate}):
@@ -397,16 +456,18 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "method": "Chafe overload horizon",
                 "source_type": "analytic_cost",
                 "benchmark": "overload_backlog_model_from_measured_google_dpf",
-                "N": int(float(service_row["N"])),
+                "N": service_n,
                 "log_n": service_row["log_n"],
                 "m": epoch_m,
-                "rho": "",
+                "rho": service_rho,
                 "M": "",
                 "tau": "",
                 "eps0": "",
                 "delta": "",
                 "decoder": "hidden_slot_online",
-                "derived_from": "fig_dpf_scaling.csv",
+                "threads": service_threads,
+                "shuffle_seconds": "",
+                "derived_from": service_source,
                 "model": "time to accumulate one epoch of backlog after lambda exceeds service rate",
             }
         )
@@ -432,36 +493,162 @@ def generate_ingestion_latency_model(scaling_rows: list[dict] | None = None) -> 
                 "eps0": "",
                 "delta": "",
                 "decoder": "batch_gate",
+                "threads": "",
+                "shuffle_seconds": 0.0,
                 "derived_from": "closed_form_waiting_time",
                 "model": "(m-1)/(2 lambda)",
             }
         )
+        if clarion_seconds is not None:
+            rows.append(
+                {
+                    "arrival_rate_reports_per_s": arrival_rate,
+                    "service_rate_reports_per_s": "",
+                    "utilization": "",
+                    "avg_latency_seconds": batch_delay(arrival_rate) + clarion_seconds,
+                    "batch_gating_seconds": batch_delay(arrival_rate),
+                    "backlog_growth_reports_per_s": 0.0,
+                    "stable": "true",
+                    "method": "Collect gate + Clarion shuffle",
+                    "source_type": "analytic_cost",
+                    "benchmark": "batch_gating_plus_literature_shuffle_time",
+                    "N": "",
+                    "log_n": "",
+                    "m": epoch_m,
+                    "rho": "",
+                    "M": "",
+                    "tau": "",
+                    "eps0": "",
+                    "delta": "",
+                    "decoder": "batch_secret_shared_shuffle",
+                    "threads": "",
+                    "shuffle_seconds": clarion_seconds,
+                    "derived_from": f"conservative Clarion-style 4-5s estimate; {CLARION_SHUFFLE_ENV} override; cite eskandarian2021clarion",
+                    "model": "(m-1)/(2 lambda) + conservative Clarion-style online shuffle time at m=1e5, scaled linearly in m",
+                }
+            )
     rows.append(
         {
             "arrival_rate_reports_per_s": crossover_rate,
             "service_rate_reports_per_s": service_rate,
             "utilization": crossover_rate / service_rate,
             "avg_latency_seconds": crossover_delay,
-            "batch_gating_seconds": crossover_delay,
+            "batch_gating_seconds": batch_delay(crossover_rate),
             "backlog_growth_reports_per_s": 0.0,
             "stable": "true",
             "method": "Queue/gate equality",
             "source_type": "analytic_cost",
             "benchmark": "md1_queue_and_batch_gate_intersection",
-            "N": int(float(service_row["N"])),
+            "N": service_n,
             "log_n": service_row["log_n"],
             "m": epoch_m,
-            "rho": "",
+            "rho": service_rho,
             "M": "",
             "tau": "",
             "eps0": "",
             "delta": "",
             "decoder": "hidden_slot_online_vs_batch_gate",
-            "derived_from": "fig_dpf_scaling.csv",
-            "model": "binary search for M/D/1 latency equal to batch-gating lower bound",
+            "threads": service_threads,
+            "shuffle_seconds": "" if clarion_seconds is None else clarion_seconds,
+            "derived_from": service_source
+            if clarion_seconds is None
+            else f"{service_source}; conservative Clarion-style 4-5s estimate; {CLARION_SHUFFLE_ENV} override",
+            "model": "binary search for M/D/1 latency equal to collect gate plus optional Clarion shuffle time",
         }
     )
     write_csv(DATA_DIR / "fig_ingestion_latency_vs_rate.csv", rows)
+    return rows
+
+
+def generate_ingestion_joint_scaling(
+    scaling_rows: list[dict] | None = None,
+    thread_rows: list[dict] | None = None,
+) -> list[dict]:
+    """Project node-by-thread capacity from measured packed64 host anchors.
+
+    The Google-DPF benchmark is a combined-work, single-process kernel: it
+    includes client key generation, both server evaluations, accumulation,
+    reduction, and reconstruction.  Consequently, ``node_equivalents`` below
+    are units of that measured work, not measurements from a physical
+    two-server cluster.  The scenario deliberately uses ideal independent
+    replication, ``R(k,t)=k r_t``, as a transparent capacity calculation and
+    separately records a 70% utilization envelope.  Only the ``k=1`` input is
+    measured; every multi-equivalent value is an optimistic analytic output.
+    """
+    if scaling_rows is None:
+        scaling_rows = read_csv(DATA_DIR / "fig_dpf_scaling.csv")
+    if thread_rows is None and (DATA_DIR / "fig_dpf_thread_scaling.csv").exists():
+        thread_rows = read_csv(DATA_DIR / "fig_dpf_thread_scaling.csv")
+    if not thread_rows:
+        raise RuntimeError("joint scaling requires fig_dpf_thread_scaling.csv")
+
+    packed_rows = sorted(
+        (row for row in thread_rows if row["method"] == PACKED_METHOD),
+        key=lambda row: int(float(row["threads"])),
+    )
+    expected_threads = [1, 2, 4, 8]
+    if [int(float(row["threads"])) for row in packed_rows] != expected_threads:
+        raise RuntimeError("packed64 joint scaling requires measured 1/2/4/8-thread anchors")
+    if {int(float(row["N"])) for row in packed_rows} != {DEFAULT_DPF_N}:
+        raise RuntimeError("packed64 joint scaling anchors must use N=2^17")
+
+    node_equivalents = [1, 2, 3, 4, 8, 16, 32, 64, 128, 160]
+    target_rate = 20_000.0
+    target_utilization = 0.70
+    node_scaling_exponent = 1.0
+    rows: list[dict] = []
+    one_thread_rate = float(packed_rows[0]["reports_per_second"])
+    for anchor in packed_rows:
+        threads = int(float(anchor["threads"]))
+        measured_rate = float(anchor["reports_per_second"])
+        speedup = measured_rate / one_thread_rate
+        parallel_efficiency = speedup / threads
+        required_raw = math.ceil(target_rate / measured_rate)
+        required_planning = math.ceil(
+            target_rate / (target_utilization * measured_rate)
+        )
+        for node_count in node_equivalents:
+            node_scaling_efficiency = 1.0
+            projected_raw = measured_rate * node_count
+            rows.append(
+                {
+                    "method": "Chafe packed64 CPU projection",
+                    "backend": PACKED_METHOD,
+                    "N": int(float(anchor["N"])),
+                    "log_n": int(float(anchor["log_n"])),
+                    "m": LATENCY_EPOCH_M,
+                    "rho": LATENCY_EPOCH_M / int(float(anchor["N"])),
+                    "threads_per_node": threads,
+                    "node_equivalents": node_count,
+                    "measured_single_node_rate_reports_per_s": measured_rate,
+                    "thread_speedup_vs_1": speedup,
+                    "thread_parallel_efficiency": parallel_efficiency,
+                    "projected_raw_rate_reports_per_s": projected_raw,
+                    "target_utilization": target_utilization,
+                    "projected_sustainable_rate_reports_per_s": target_utilization
+                    * projected_raw,
+                    "node_scaling_efficiency_assumed": node_scaling_efficiency,
+                    "node_scaling_exponent": node_scaling_exponent,
+                    "plot_role": "measured_input"
+                    if node_count == 1
+                    else "ideal_capacity_projection",
+                    "required_node_equivalents_for_20k_raw": required_raw,
+                    "required_node_equivalents_for_20k_at_target_utilization": required_planning,
+                    "source_type": "analytic_cost",
+                    "benchmark": "joint_node_thread_capacity_projection_from_measured_google_dpf",
+                    "derived_from": "fig_dpf_thread_scaling.csv",
+                    "single_node_anchor_measured": "true",
+                    "multi_node_measured": "false",
+                    "model": "R(k,t)=k*r_t under ideal independent replication; k=1 is measured, every k>1 value is unmeasured, and the sustainable envelope is 0.70*R",
+                    "timed_scope": anchor["timed_scope"],
+                    "deployment_scope": "combined-work node equivalents projected from a single-process benchmark; not a physical two-server cluster measurement",
+                    "platform_system": anchor["platform_system"],
+                    "platform_release": anchor["platform_release"],
+                    "platform_machine": anchor["platform_machine"],
+                    "cpu_count": anchor["cpu_count"],
+                }
+            )
+    write_csv(DATA_DIR / "fig_ingestion_joint_scaling.csv", rows)
     return rows
 
 
@@ -469,8 +656,8 @@ def generate_google_dpf_phase_breakdown() -> list[dict]:
     raw_rows = run_google_dpf(
         [
             f"--log_n={DEFAULT_DPF_LOG_N}",
-            "--reports=3",
-            "--repeats=3",
+            "--reports=32",
+            "--repeats=7",
             "--threads=1",
             "--breakdown",
             f"--seed={60_000 + DEFAULT_DPF_LOG_N}",
@@ -499,8 +686,8 @@ def generate_google_dpf_thread_scaling() -> list[dict]:
         raw_rows = run_google_dpf(
             [
                 f"--log_n={DEFAULT_DPF_LOG_N}",
-                "--reports=8",
-                "--repeats=3",
+                "--reports=128",
+                "--repeats=7",
                 f"--threads={threads}",
                 f"--seed={70_000 + threads}",
             ]
@@ -517,7 +704,7 @@ def generate_google_dpf_thread_scaling() -> list[dict]:
     for row in rows:
         baseline_ms = single_thread[row["method"]]
         row["thread_speedup_vs_1"] = baseline_ms / float(row["time_ms_per_report"])
-        row["parallelism_model"] = "independent per-worker accumulators reduced after measurement"
+        row["parallelism_model"] = "independent per-worker accumulators; outer wall time includes the final array reduction and reconstruction check"
     write_csv(DATA_DIR / "fig_dpf_thread_scaling.csv", rows)
     return rows
 
@@ -600,12 +787,14 @@ def generate_all() -> dict[str, int]:
         breakdown_rows = generate_google_dpf_phase_breakdown()
         thread_rows = generate_google_dpf_thread_scaling()
         throughput_rows = generate_dpf_throughput_from_scaling(scaling_rows)
-        latency_rows = generate_ingestion_latency_model(scaling_rows)
+        latency_rows = generate_ingestion_latency_model(scaling_rows, thread_rows)
+        node_rows = generate_ingestion_joint_scaling(scaling_rows, thread_rows)
         outputs["fig_dpf_scaling.csv"] = len(scaling_rows)
         outputs["fig_dpf_phase_breakdown.csv"] = len(breakdown_rows)
         outputs["fig_dpf_thread_scaling.csv"] = len(thread_rows)
         outputs["fig_dpf_throughput_vs_n.csv"] = len(throughput_rows)
         outputs["fig_ingestion_latency_vs_rate.csv"] = len(latency_rows)
+        outputs["fig_ingestion_joint_scaling.csv"] = len(node_rows)
     return outputs
 
 

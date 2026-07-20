@@ -7,6 +7,7 @@ import numpy as np
 from chafe_eval_lib import (
     DATA_DIR,
     eps_drop_proxy,
+    eps_ideal_padded,
     eps_ideal_shuffle,
     eps_pool_add_remove,
     eps_pool_replacement,
@@ -22,6 +23,7 @@ DEFAULT_RHO = 1.0
 RHO_GRID = np.linspace(0.05, 3.0, 60)
 TAU_GRID = np.linspace(1.0, 8.0, 57)
 EPS0_GRID = np.linspace(0.1, 5.0, 50)
+M_GRID = [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000, 30_000_000, 100_000_000]
 
 
 def ceil_slots(m: int, rho: float) -> int:
@@ -83,6 +85,20 @@ def generate_privacy_vs_rho() -> list[dict]:
                 delta=delta,
                 decoder="ideal_shuffle",
                 bound="second_order_shuffle",
+            )
+        )
+        rows.append(
+            base_row(
+                method="IdealShuffle (same M padding)",
+                epsilon=eps_ideal_padded(eps0, M, delta),
+                source_type="formula",
+                m=m,
+                rho=rho,
+                tau=tau,
+                eps0=eps0,
+                delta=delta,
+                decoder="ideal_shuffle_padded",
+                bound="second_order_shuffle_same_public_padding",
             )
         )
         rows.append(
@@ -156,6 +172,20 @@ def generate_privacy_vs_eps0() -> list[dict]:
         )
         rows.append(
             base_row(
+                method="IdealShuffle (same M padding)",
+                epsilon=eps_ideal_padded(eps0, M, delta),
+                source_type="formula",
+                m=m,
+                rho=rho,
+                tau=tau,
+                eps0=eps0,
+                delta=delta,
+                decoder="ideal_shuffle_padded",
+                bound="second_order_shuffle_same_public_padding",
+            )
+        )
+        rows.append(
+            base_row(
                 method="Drop (matched padding)",
                 epsilon=eps_drop_proxy(eps0, rho, M, delta),
                 source_type="formula",
@@ -211,6 +241,20 @@ def generate_privacy_vs_tau() -> list[dict]:
         )
         rows.append(
             base_row(
+                method="IdealShuffle (same M padding)",
+                epsilon=eps_ideal_padded(eps0, M, delta),
+                source_type="formula",
+                m=m,
+                rho=rho,
+                tau=tau,
+                eps0=eps0,
+                delta=delta,
+                decoder="ideal_shuffle_padded",
+                bound="second_order_shuffle_same_public_padding",
+            )
+        )
+        rows.append(
+            base_row(
                 method="Drop (matched padding)",
                 epsilon=eps_drop_proxy(eps0, rho, M, delta),
                 source_type="formula",
@@ -237,7 +281,74 @@ def generate_privacy_vs_tau() -> list[dict]:
                 bound="second_order_replacement",
             )
         )
+        rows.append(
+            base_row(
+                method="Pool (add/remove)",
+                epsilon=eps_pool_add_remove(eps0, rho, M, delta),
+                source_type="formula",
+                m=m,
+                rho=rho,
+                tau=tau,
+                eps0=eps0,
+                delta=delta,
+                decoder="pool",
+                bound="second_order_add_remove",
+            )
+        )
     write_csv(DATA_DIR / "fig_privacy_vs_tau.csv", rows)
+    return rows
+
+
+def generate_privacy_vs_m_large() -> list[dict]:
+    rows: list[dict] = []
+    rho = DEFAULT_RHO
+    tau = DEFAULT_TAU
+    eps0 = DEFAULT_EPS0
+    delta = DEFAULT_DELTA
+    for m in M_GRID:
+        M = ceil_release(m, tau)
+        for method, epsilon, decoder, bound in [
+            ("IdealShuffle", eps_ideal_shuffle(eps0, m, delta), "ideal_shuffle", "second_order_shuffle"),
+            (
+                "IdealShuffle (same M padding)",
+                eps_ideal_padded(eps0, M, delta),
+                "ideal_shuffle_padded",
+                "second_order_shuffle_same_public_padding",
+            ),
+            (
+                "Drop (matched padding)",
+                eps_drop_proxy(eps0, rho, M, delta),
+                "drop",
+                "second_order_matched_drop",
+            ),
+            (
+                "Pool (replacement)",
+                eps_pool_replacement(eps0, rho, M, delta),
+                "pool",
+                "second_order_replacement",
+            ),
+            (
+                "Pool (add/remove)",
+                eps_pool_add_remove(eps0, rho, M, delta),
+                "pool",
+                "second_order_add_remove",
+            ),
+        ]:
+            rows.append(
+                base_row(
+                    method=method,
+                    epsilon=epsilon,
+                    source_type="formula",
+                    m=m,
+                    rho=rho,
+                    tau=tau,
+                    eps0=eps0,
+                    delta=delta,
+                    decoder=decoder,
+                    bound=bound,
+                )
+            )
+    write_csv(DATA_DIR / "fig_privacy_vs_m_large.csv", rows)
     return rows
 
 
@@ -453,6 +564,7 @@ def generate_all() -> dict[str, int]:
         "fig_privacy_vs_rho.csv": len(generate_privacy_vs_rho()),
         "fig_privacy_vs_eps0.csv": len(generate_privacy_vs_eps0()),
         "fig_privacy_vs_tau.csv": len(generate_privacy_vs_tau()),
+        "fig_privacy_vs_m_large.csv": len(generate_privacy_vs_m_large()),
         "fig_collision_regimes.csv": len(generate_collision_regimes()),
         "fig_utility_factors.csv": len(generate_utility_factors()),
         "fig_privacy_utility_frontier.csv": len(generate_frontier()),

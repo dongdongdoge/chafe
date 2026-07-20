@@ -13,3 +13,16 @@ cc_binary(
         "@com_google_absl//absl/status:statusor",
     ],
 )
+
+cc_binary(
+    name = "google_dpf_loopback_e2e_benchmark",
+    srcs = ["google_dpf_loopback_e2e_benchmark.cc"],
+    deps = [
+        "//dpf:distributed_point_function",
+        "//pir/prng:aes_128_ctr_seeded_prng",
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)

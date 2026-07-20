@@ -6,16 +6,38 @@ from pathlib import Path
 
 from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ensure_dirs, read_csv
 
+import accountant_scaling_benchmark
 import exact_drop_accountant
+import exact_certified_utility
+import exact_ideal_shuffle_baseline
 import fetch_adult_dataset
 import fixed_eps0_utility
+import full_release_dummy_utility
+import full_release_real_utility
 import generate_formula_data
+import generic_exact_accountant_validation
+import large_exact_real_utility
 import make_figures
 import microbench
+import packed64_safety
+import pool_robust_mean_utility
+import privacy_2x2_validation
+import privacy_large_m_accounting
+import padding_correction_utility
 import real_data_utility
+import system_stage_benchmark
 import utility_simulations
 import validate_results
 import compose_workload_comparisons
+import covertype_utility
+import cgp_shuffle_model
+import epoch_close_scaling
+import full_release_proxy_utility
+import external_gpu_dpf
+import finite_burst_latency
+import modern_data_utility
+import modern_fixed_eps0_utility
+import make_modern_utility_figure
 
 
 def closest(rows: list[dict[str, str]], key: str, value: float, method: str | None = None) -> dict[str, str]:
@@ -29,7 +51,12 @@ def closest(rows: list[dict[str, str]], key: str, value: float, method: str | No
 
 def summarize_outputs() -> str:
     privacy_rho = read_csv(DATA_DIR / "fig_privacy_vs_rho.csv")
-    exact_rows = [row for row in read_csv(DATA_DIR / "fig_exact_vs_proxy_drop.csv") if row["source_type"] == "exact_accountant"]
+    exact_rows = [
+        row
+        for row in read_csv(DATA_DIR / "fig_exact_vs_proxy_drop.csv")
+        if row["source_type"] == "exact_law_numerical"
+    ]
+    generic_exact_rows = read_csv(DATA_DIR / "fig_generic_exact_accountant_validation.csv")
     micro_rows = read_csv(DATA_DIR / "fig_product_vs_dual_microbench.csv")
     delay_rows = read_csv(DATA_DIR / "fig_batch_gating_delay.csv")
     range_rows = read_csv(DATA_DIR / "fig_range_error_vs_epsilon.csv")
@@ -44,20 +71,46 @@ def summarize_outputs() -> str:
     real_age_rows = read_csv(DATA_DIR / "fig_real_age_range_error_vs_epsilon.csv")
     real_sum_rows = read_csv(DATA_DIR / "fig_real_hours_sum_error_vs_epsilon.csv")
     real_f1_rows = read_csv(DATA_DIR / "fig_real_heavyhitter_f1_vs_epsilon.csv")
+    covertype_rows = read_csv(DATA_DIR / "fig_covertype_workloads.csv")
+    certified_utility_rows = read_csv(DATA_DIR / "fig_exact_certified_utility.csv")
 
     ideal_rho1 = closest(privacy_rho, "rho", 1.0, "IdealShuffle")
+    ideal_padded_rho1 = closest(
+        privacy_rho, "rho", 1.0, "IdealShuffle (same M padding)"
+    )
     drop_rho1 = closest(privacy_rho, "rho", 1.0, "Drop (matched padding)")
     pool_rho1 = closest(privacy_rho, "rho", 1.0, "Pool (replacement)")
     pool_add_rho1 = closest(privacy_rho, "rho", 1.0, "Pool (add/remove)")
     drop_rho2 = closest(privacy_rho, "rho", 2.0, "Drop (matched padding)")
 
     exact_ratios = [float(row["exact_to_proxy_ratio"]) for row in exact_rows]
+
+    def family_exact(case: str, decoder: str, dummy_mode: str) -> dict[str, str]:
+        return next(
+            row
+            for row in generic_exact_rows
+            if row["case"] == case
+            and row["decoder"] == decoder
+            and row["dummy_law_mode"] == dummy_mode
+        )
+
+    repl_drop_exact = family_exact(
+        "fixed_n_replacement", "drop", "uniform_public_reference"
+    )
+    repl_pool_exact = family_exact(
+        "fixed_n_replacement", "pool", "uniform_public_reference"
+    )
+    ar_drop_exact = family_exact(
+        "small_mechanism_add_remove", "drop", "uniform_public_reference"
+    )
+    ar_pool_exact = family_exact(
+        "small_mechanism_add_remove", "pool", "uniform_public_reference"
+    )
     product = next(
         row for row in micro_rows if row["method"] in ("Google DPF packed64", "Product-valued kernel")
     )
     tuple_product = next((row for row in micro_rows if row["method"] == "Google DPF tuple product"), None)
     dual = next(row for row in micro_rows if row["method"] in ("Google DPF dual-track", "Dual-track kernel"))
-    delay_1m = closest(delay_rows, "m", 1_000_000, "Collect-then-shuffle")
     range_drop_016 = closest(range_rows, "epsilon_prime", 0.16, "Drop")
     range_ideal_016 = closest(range_rows, "epsilon_prime", 0.16, "IdealShuffle")
     sum_pool_016 = closest(sum_rows, "epsilon_prime", 0.16, "Pool")
@@ -69,9 +122,15 @@ def summarize_outputs() -> str:
     product_large = max(product_scaling_rows, key=lambda row: float(row["N"]))
     online_latency_rows = [row for row in latency_rows if row["method"] == "Chafe online DPF service"]
     service_n = int(float(online_latency_rows[0]["N"])) if online_latency_rows else 2**17
-    throughput_service = closest(throughput_rows, "N", service_n, "Google DPF packed64")
+    service_threads = int(float(online_latency_rows[0].get("threads", "1") or "1"))
+    service_rate = float(online_latency_rows[0]["service_rate_reports_per_s"])
     chafe_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Chafe online DPF service")
     batch_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Collect-then-shuffle gate")
+    batch_latency_20k = closest(latency_rows, "arrival_rate_reports_per_s", 20_000.0, "Collect-then-shuffle gate")
+    clarion_rows = [row for row in latency_rows if row["method"] == "Collect gate + Clarion shuffle"]
+    clarion_latency_40 = closest(latency_rows, "arrival_rate_reports_per_s", 40.0, "Collect gate + Clarion shuffle") if clarion_rows else None
+    clarion_latency_20k = closest(latency_rows, "arrival_rate_reports_per_s", 20_000.0, "Collect gate + Clarion shuffle") if clarion_rows else None
+    latency_m = int(float(batch_latency_40["m"]))
     phase_eval_product = next(
         row for row in phase_rows if row["method"] == "Google DPF packed64" and row["phase"] == "eval"
     )
@@ -89,21 +148,46 @@ def summarize_outputs() -> str:
     real_sum_drop_016 = closest(real_sum_rows, "epsilon_prime", 0.16, "Drop")
     real_f1_ideal_032 = closest(real_f1_rows, "epsilon_prime", 0.32, "IdealShuffle")
     real_f1_drop_032 = closest(real_f1_rows, "epsilon_prime", 0.32, "Drop")
+    covertype_range_drop_016 = next(
+        row
+        for row in covertype_rows
+        if row["task"] == "elevation_range" and row["method"] == "Drop" and abs(float(row["epsilon_prime"]) - 0.16) < 1e-12
+    )
+    covertype_hh_drop_032 = next(
+        row
+        for row in covertype_rows
+        if row["task"] == "soil_cover_hh" and row["method"] == "Drop" and abs(float(row["epsilon_prime"]) - 0.32) < 1e-12
+    )
+    covertype_sum_pool_016 = next(
+        row
+        for row in covertype_rows
+        if row["task"] == "road_distance_sum" and row["method"] == "Pool" and abs(float(row["epsilon_prime"]) - 0.16) < 1e-12
+    )
 
     return "\n".join(
         [
             "Main numerical takeaways:",
             (
                 f"- At rho=1, eps0=1, m=1000000, tau=2, delta=1e-6: "
-                f"IdealShuffle epsilon'={float(ideal_rho1['epsilon']):.4g}, "
-                f"Drop proxy={float(drop_rho1['epsilon']):.4g}, "
-                f"Pool replacement={float(pool_rho1['epsilon']):.4g}, "
-                f"Pool add/remove={float(pool_add_rho1['epsilon']):.4g}."
+                f"replacement proxies are standard IdealShuffle epsilon'={float(ideal_rho1['epsilon']):.4g}, "
+                f"same-M padded IdealShuffle={float(ideal_padded_rho1['epsilon']):.4g}, "
+                f"Drop={float(drop_rho1['epsilon']):.4g}, and directed homogeneous "
+                f"Pool score={float(pool_rho1['epsilon']):.4g}; "
+                f"the separately scoped Pool add/remove proxy is {float(pool_add_rho1['epsilon']):.4g}."
             ),
             f"- The Drop formula proxy falls to epsilon'={float(drop_rho2['epsilon']):.4g} at rho=2 on the same grid.",
             (
                 f"- Exact finite-domain Drop hockey-stick validation has exact/proxy ratios "
                 f"{min(exact_ratios):.3g}..{max(exact_ratios):.3g} over the rho grid."
+            ),
+            (
+                "- Exact rational finite-family budgets at N=2, M=3, delta=1e-3 and uniform public nu: "
+                f"replacement Drop epsilon={float(repl_drop_exact['family_epsilon_exact_reported']):.4g} "
+                f"(alpha={repl_drop_exact['family_alpha_exact_fraction']}), replacement Pool "
+                f"epsilon={float(repl_pool_exact['family_epsilon_exact_reported']):.4g} "
+                f"(alpha={repl_pool_exact['family_alpha_exact_fraction']}), cap-wide add/remove Drop "
+                f"epsilon={float(ar_drop_exact['family_epsilon_exact_reported']):.4g}, and Pool "
+                f"epsilon={float(ar_pool_exact['family_epsilon_exact_reported']):.4g}."
             ),
             (
                 f"- {product['benchmark']} packed64 backend measured "
@@ -126,15 +210,26 @@ def summarize_outputs() -> str:
                 f"of measured per-report backend time."
             ),
             (
-                f"- The measured packed64 DPF service rate at N={service_n} is "
-                f"{float(throughput_service['reports_per_second']):.3g} reports/s. At arrival rate 40 reports/s, "
+                f"- The measured packed64 DPF service rate at N={service_n} with {service_threads} worker(s) is "
+                f"{service_rate:.3g} reports/s. At arrival rate 40 reports/s, "
                 f"the analytic online service latency is {float(chafe_latency_40['avg_latency_seconds']):.3g} s, "
-                f"while collect-then-shuffle batch gating for m=1e6 is "
-                f"{float(batch_latency_40['avg_latency_seconds']):.3g} s."
+                f"while collect-then-shuffle batch gating for m={latency_m} is "
+                f"{float(batch_latency_40['avg_latency_seconds']):.3g} s"
+                + (
+                    f" and gate+Clarion is {float(clarion_latency_40['avg_latency_seconds']):.3g} s."
+                    if clarion_latency_40 is not None
+                    else "."
+                )
             ),
             (
-                f"- Analytic collect-then-shuffle average wait at m=1000000 and lambda=20000/s is "
-                f"{float(delay_1m['delay_seconds']):.3g} s; Chafe online batch-gating wait is 0."
+                f"- Analytic collect-then-shuffle average wait at m={latency_m} and lambda=20000/s is "
+                f"{float(batch_latency_20k['avg_latency_seconds']):.3g} s"
+                + (
+                    f" with gate+Clarion at {float(clarion_latency_20k['avg_latency_seconds']):.3g} s;"
+                    if clarion_latency_20k is not None
+                    else ";"
+                )
+                + " Chafe online batch-gating wait is 0."
             ),
             (
                 f"- Monte Carlo range error at epsilon'=0.16: IdealShuffle "
@@ -169,6 +264,23 @@ def summarize_outputs() -> str:
                 f"- UCI Adult occupation-education top-50 F1 at epsilon'=0.32: IdealShuffle "
                 f"{float(real_f1_ideal_032['f1']):.3g}, Drop {float(real_f1_drop_032['f1']):.3g}."
             ),
+            (
+                f"- UCI Covertype m=300000 workloads: at epsilon'=0.16, Drop elevation-range error is "
+                f"{float(covertype_range_drop_016['mean_relative_error']):.3g}; at epsilon'=0.32, "
+                f"Drop soil/cover top-50 F1 is {float(covertype_hh_drop_032['f1']):.3g}; at epsilon'=0.16, "
+                f"Pool road-distance sum error is {float(covertype_sum_pool_016['mean_relative_error']):.3g}."
+            ),
+            (
+                "- Exact-certified complete-release binary count at target "
+                "(epsilon'=ln 2, delta=1e-3): "
+                + "; ".join(
+                    f"{row['method']} uses p={row['truthful_probability_fraction']} "
+                    f"(exact epsilon'={float(row['exact_epsilon_prime']):.3g}) and has "
+                    f"exact MAE={float(row['exact_mean_absolute_count_error']):.3g}"
+                    for row in certified_utility_rows
+                )
+                + "."
+            ),
         ]
     )
 
@@ -186,20 +298,56 @@ def adult_row_count() -> int:
         return sum(1 for _ in csv.DictReader(f))
 
 
-def run(skip_utility: bool = False) -> None:
+def run(skip_utility: bool = False, skip_microbench: bool = False) -> None:
     ensure_dirs()
     outputs: dict[str, int] = {}
-    for module in [generate_formula_data, exact_drop_accountant, microbench]:
+    modules = [
+        generate_formula_data,
+        exact_drop_accountant,
+        accountant_scaling_benchmark,
+        exact_ideal_shuffle_baseline,
+        generic_exact_accountant_validation,
+        privacy_2x2_validation,
+        privacy_large_m_accounting,
+        packed64_safety,
+        system_stage_benchmark,
+        cgp_shuffle_model,
+    ]
+    if not skip_microbench:
+        modules.append(microbench)
+    else:
+        print(
+            "Skipping Google DPF microbenchmark regeneration; existing DPF CSVs "
+            "are retained and the fast epoch-stage benchmarks are still rerun."
+        )
+    for module in modules:
         outputs.update(module.generate_all())
+    if not skip_microbench:
+        close_rows = epoch_close_scaling.generate_all()
+        outputs["data/fig_epoch_close_scaling.csv"] = len(close_rows)
     if not skip_utility:
         outputs["datasets/adult/adult_clean.csv"] = adult_row_count()
         outputs.update(utility_simulations.generate_all())
         outputs.update(fixed_eps0_utility.generate_all())
+        outputs.update(full_release_dummy_utility.generate_all())
+        outputs.update(padding_correction_utility.generate_all())
+        outputs.update(pool_robust_mean_utility.generate_all())
+        outputs.update(full_release_real_utility.generate_all())
         outputs.update(real_data_utility.generate_all())
+        outputs.update(covertype_utility.generate_all())
         outputs.update(compose_workload_comparisons.generate_all())
+        outputs.update(exact_certified_utility.generate_all())
+        outputs.update(large_exact_real_utility.generate_all())
+        outputs.update(full_release_proxy_utility.generate_all())
+        outputs.update(modern_data_utility.generate_all())
+        outputs.update(modern_fixed_eps0_utility.generate_all())
     else:
         print("Skipping utility simulations by request; workload figures will not be regenerated.")
+    gpu_rows = external_gpu_dpf.generate()
+    outputs["fig_gpu_dpf_external.csv"] = len(gpu_rows)
+    outputs.update(finite_burst_latency.generate_all())
     outputs.update(make_figures.generate_all())
+    outputs.update(make_modern_utility_figure.generate_all())
     notes = validate_results.validate_all()
 
     print("Generated CSV row counts:")
@@ -216,9 +364,17 @@ def run(skip_utility: bool = False) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-utility", action="store_true", help="regenerate formula/exact/microbench figures only")
+    parser.add_argument(
+        "--skip-microbench",
+        action="store_true",
+        help="retain existing measured backend CSVs instead of requiring the benchmark binary",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    run(skip_utility=args.skip_utility)
+    run(
+        skip_utility=args.skip_utility,
+        skip_microbench=args.skip_microbench,
+    )

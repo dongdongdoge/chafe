@@ -1,0 +1,18 @@
+{
+  "clean_csv": "datasets/covertype/covertype_selected.csv",
+  "dataset": "UCI Covertype",
+  "doi": "10.24432/C50K5N",
+  "notes": "The selected table keeps one numeric field for range queries, one bounded numeric field for sum queries, and wilderness/soil/cover categorical fields for heavy hitters.",
+  "raw_file": "datasets/covertype/covtype.data.gz",
+  "raw_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
+  "rows_total": 581012,
+  "selected_fields": [
+    "elevation",
+    "horizontal_distance_to_roadways",
+    "wilderness_area",
+    "soil_type",
+    "cover_type"
+  ],
+  "uci_id": 31,
+  "uci_page": "https://archive.ics.uci.edu/dataset/31/covertype"
+}

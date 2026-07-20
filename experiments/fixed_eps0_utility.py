@@ -8,8 +8,8 @@ import numpy as np
 from chafe_eval_lib import (
     DATA_DIR,
     eps_drop_proxy,
-    eps_ideal_shuffle,
-    eps_pool_replacement,
+    eps_ideal_padded,
+    eps_pool_replacement_generic,
     mean_and_se,
     write_csv,
 )
@@ -79,11 +79,11 @@ def interval_error(true_hist: np.ndarray, est_hist: np.ndarray, rng: np.random.G
 def privacy_reference(method: str, eps0: float) -> tuple[float, str]:
     rel = release_length()
     if method == "All reports":
-        return eps_ideal_shuffle(eps0, SAMPLE_M, DELTA), "second_order_shuffle"
+        return eps_ideal_padded(eps0, rel, DELTA), "second_order_shuffle_same_public_padding"
     if method == "Drop":
         return eps_drop_proxy(eps0, RHO, rel, DELTA), "second_order_matched_drop"
     if method == "Pool":
-        return eps_pool_replacement(eps0, RHO, rel, DELTA), "second_order_replacement"
+        return eps_pool_replacement_generic(eps0, rel, DELTA), "second_order_replacement_generic"
     raise ValueError(method)
 
 

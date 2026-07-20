@@ -11,8 +11,8 @@ import fetch_adult_dataset
 from chafe_eval_lib import (
     DATA_DIR,
     eps_drop_proxy,
-    eps_ideal_shuffle,
-    eps_pool_replacement,
+    eps_ideal_padded,
+    eps_pool_replacement_generic,
     invert_eps0,
     mean_and_se,
     write_csv,
@@ -45,11 +45,11 @@ def eps0_for_method(method: str, eps_prime: float) -> float:
     if method == "Local":
         return eps_prime
     if method == "IdealShuffle":
-        return invert_eps0(eps_prime, lambda eps0: eps_ideal_shuffle(eps0, SAMPLE_M, DELTA))
+        return invert_eps0(eps_prime, lambda eps0: eps_ideal_padded(eps0, rel, DELTA))
     if method == "Drop":
         return invert_eps0(eps_prime, lambda eps0: eps_drop_proxy(eps0, RHO, rel, DELTA))
     if method == "Pool":
-        return invert_eps0(eps_prime, lambda eps0: eps_pool_replacement(eps0, RHO, rel, DELTA))
+        return invert_eps0(eps_prime, lambda eps0: eps_pool_replacement_generic(eps0, rel, DELTA))
     raise ValueError(f"unknown method: {method}")
 
 

@@ -1,172 +1,286 @@
 method,epsilon,source_type,m,N,rho,M,tau,eps0,delta,decoder,bound
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1000000,1.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0054782976348920435,formula,1000000,1000000,1.0,1000000,1.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.002015353072494919,formula,1000000,1000000,1.0,1000000,1.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.004355575852392245,formula,1000000,1000000,1.0,1000000,1.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.005125650486291739,formula,1000000,1000000,1.0,1000000,1.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1125000,1.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.005164988542653852,formula,1000000,1000000,1.0,1125000,1.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0019000930987284016,formula,1000000,1000000,1.0,1125000,1.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.004106476294931911,formula,1000000,1000000,1.0,1125000,1.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.004832509622465351,formula,1000000,1000000,1.0,1125000,1.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1250000,1.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.004899938365037973,formula,1000000,1000000,1.0,1250000,1.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0018025865875046804,formula,1000000,1000000,1.0,1250000,1.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0038957454748422596,formula,1000000,1000000,1.0,1250000,1.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.004584521166501273,formula,1000000,1000000,1.0,1250000,1.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1375000,1.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.00467190792067292,formula,1000000,1000000,1.0,1375000,1.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0017186988750615892,formula,1000000,1000000,1.0,1375000,1.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0037144475674849003,formula,1000000,1000000,1.0,1375000,1.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.004371169421863527,formula,1000000,1000000,1.0,1375000,1.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1500000,1.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.004473011288193802,formula,1000000,1000000,1.0,1500000,1.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0016455288930542892,formula,1000000,1000000,1.0,1500000,1.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0035563127914496335,formula,1000000,1000000,1.0,1500000,1.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.004185076097087742,formula,1000000,1000000,1.0,1500000,1.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1625000,1.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.004297530237166728,formula,1000000,1000000,1.0,1625000,1.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.001580973022066272,formula,1000000,1000000,1.0,1625000,1.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0034167948098894744,formula,1000000,1000000,1.0,1625000,1.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.004020891053762758,formula,1000000,1000000,1.0,1625000,1.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1750000,1.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.004141203757119335,formula,1000000,1000000,1.0,1750000,1.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0015234637239461381,formula,1000000,1000000,1.0,1750000,1.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.003292505863402301,formula,1000000,1000000,1.0,1750000,1.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.003874627569761493,formula,1000000,1000000,1.0,1750000,1.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,1875000,1.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0040007829218100975,formula,1000000,1000000,1.0,1875000,1.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0014718057855237488,formula,1000000,1000000,1.0,1875000,1.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0031808628603733654,formula,1000000,1000000,1.0,1875000,1.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0037432458576390796,formula,1000000,1000000,1.0,1875000,1.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2000000,2.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.003873741406990389,formula,1000000,1000000,1.0,2000000,2.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0014250698240463012,formula,1000000,1000000,1.0,2000000,2.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.003079857221198933,formula,1000000,1000000,1.0,2000000,2.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.003624382216849014,formula,1000000,1000000,1.0,2000000,2.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2125000,2.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0037580811734941517,formula,1000000,1000000,1.0,2125000,2.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0013825208019819467,formula,1000000,1000000,1.0,2125000,2.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0029879003846645874,formula,1000000,1000000,1.0,2125000,2.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0035161672253361826,formula,1000000,1000000,1.0,2125000,2.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2250000,2.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0036521984232613623,formula,1000000,1000000,1.0,2250000,2.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0013435687149966128,formula,1000000,1000000,1.0,2250000,2.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0029037172349281634,formula,1000000,1000000,1.0,2250000,2.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.003417100324194493,formula,1000000,1000000,1.0,2250000,2.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2375000,2.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0035547889108379304,formula,1000000,1000000,1.0,2375000,2.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.001307733758001498,formula,1000000,1000000,1.0,2375000,2.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0028262708184716096,formula,1000000,1000000,1.0,2375000,2.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.00332596122442332,formula,1000000,1000000,1.0,2375000,2.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2500000,2.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0034647796453144758,formula,1000000,1000000,1.0,2500000,2.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0012746211997004774,formula,1000000,1000000,1.0,2500000,2.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0027547080430377685,formula,1000000,1000000,1.0,2500000,2.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0032417460053263112,formula,1000000,1000000,1.0,2500000,2.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2625000,2.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0033812787086129896,formula,1000000,1000000,1.0,2625000,2.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0012439029217694427,formula,1000000,1000000,1.0,2625000,2.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0026883197801524693,formula,1000000,1000000,1.0,2625000,2.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0031636201630785635,formula,1000000,1000000,1.0,2625000,2.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2750000,2.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.003303537771786965,formula,1000000,1000000,1.0,2750000,2.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0012153036293737404,formula,1000000,1000000,1.0,2750000,2.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.002626511063330449,formula,1000000,1000000,1.0,2750000,2.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0030908835399149803,formula,1000000,1000000,1.0,2750000,2.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,2875000,2.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0032309236787489174,formula,1000000,1000000,1.0,2875000,2.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0011885903974057325,formula,1000000,1000000,1.0,2875000,2.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0025687784954309843,formula,1000000,1000000,1.0,2875000,2.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0030229437370606154,formula,1000000,1000000,1.0,2875000,2.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3000000,3.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0031628966142058118,formula,1000000,1000000,1.0,3000000,3.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.001163564638917081,formula,1000000,1000000,1.0,3000000,3.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0025146928908544963,formula,1000000,1000000,1.0,3000000,3.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002959295688032472,formula,1000000,1000000,1.0,3000000,3.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3125000,3.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0030989931255923113,formula,1000000,1000000,1.0,3125000,3.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.001140055859237041,formula,1000000,1000000,1.0,3125000,3.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0024638857769591466,formula,1000000,1000000,1.0,3125000,3.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002899505773479211,formula,1000000,1000000,1.0,3125000,3.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3250000,3.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.003038812773054825,formula,1000000,1000000,1.0,3250000,3.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0011179167447760501,formula,1000000,1000000,1.0,3250000,3.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0024160387799958476,formula,1000000,1000000,1.0,3250000,3.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002843199330527969,formula,1000000,1000000,1.0,3250000,3.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3375000,3.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0029820075254625342,formula,1000000,1000000,1.0,3375000,3.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010970192620361927,formula,1000000,1000000,1.0,3375000,3.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0023708751942997557,formula,1000000,1000000,1.0,3375000,3.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002790050731391828,formula,1000000,1000000,1.0,3375000,3.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3500000,3.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0029282732589342897,formula,1000000,1000000,1.0,3500000,3.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010772515300940247,formula,1000000,1000000,1.0,3500000,3.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0023281532231082354,formula,1000000,1000000,1.0,3500000,3.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0027397754291507044,formula,1000000,1000000,1.0,3500000,3.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3625000,3.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002877342882326116,formula,1000000,1000000,1.0,3625000,3.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010585152916087587,formula,1000000,1000000,1.0,3625000,3.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0022876605129102845,formula,1000000,1000000,1.0,3625000,3.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002692123525762682,formula,1000000,1000000,1.0,3625000,3.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3750000,3.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002828980734067249,formula,1000000,1000000,1.0,3750000,3.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010407238515334361,formula,1000000,1000000,1.0,3750000,3.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.002249209698594445,formula,1000000,1000000,1.0,3750000,3.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0026468745295850473,formula,1000000,1000000,1.0,3750000,3.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,3875000,3.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002782977981504531,formula,1000000,1000000,1.0,3875000,3.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010238003846283156,formula,1000000,1000000,1.0,3875000,3.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0022126347456511123,formula,1000000,1000000,1.0,3875000,3.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0026038330508705563,formula,1000000,1000000,1.0,3875000,3.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4000000,4.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0027391488174460217,formula,1000000,1000000,1.0,4000000,4.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0010076765362474595,formula,1000000,1000000,1.0,4000000,4.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0021777879261961224,formula,1000000,1000000,1.0,4000000,4.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0025628252431458697,formula,1000000,1000000,1.0,4000000,4.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4125000,4.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002697327295629655,formula,1000000,1000000,1.0,4125000,4.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009922912581727154,formula,1000000,1000000,1.0,4125000,4.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.002144537302978158,formula,1000000,1000000,1.0,4125000,4.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0025236958423863684,formula,1000000,1000000,1.0,4125000,4.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4250000,4.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0026573646820272127,formula,1000000,1000000,1.0,4250000,4.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009775898342128985,formula,1000000,1000000,1.0,4250000,4.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0021127646235062237,formula,1000000,1000000,1.0,4250000,4.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002486305688821102,formula,1000000,1000000,1.0,4250000,4.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4375000,4.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0026191272254687662,formula,1000000,1000000,1.0,4375000,4.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009635230600623599,formula,1000000,1000000,1.0,4375000,4.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0020823635475620992,formula,1000000,1000000,1.0,4375000,4.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0024505296410658535,formula,1000000,1000000,1.0,4375000,4.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4500000,4.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002582494271326926,formula,1000000,1000000,1.0,4500000,4.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009500465493642008,formula,1000000,1000000,1.0,4500000,4.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0020532381474659554,formula,1000000,1000000,1.0,4500000,4.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0024162548112326757,formula,1000000,1000000,1.0,4500000,4.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4625000,4.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0025473566575681993,formula,1000000,1000000,1.0,4625000,4.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009371201436505424,formula,1000000,1000000,1.0,4625000,4.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0020253016328407856,formula,1000000,1000000,1.0,4625000,4.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002383379064230095,formula,1000000,1000000,1.0,4625000,4.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4750000,4.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002513615344540242,formula,1000000,1000000,1.0,4750000,4.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009247074082694267,formula,1000000,1000000,1.0,4750000,4.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001998475261210929,formula,1000000,1000000,1.0,4750000,4.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002351809735753242,formula,1000000,1000000,1.0,4750000,4.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,4875000,4.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002481180239278767,formula,1000000,1000000,1.0,4875000,4.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009127751998714984,formula,1000000,1000000,1.0,4875000,4.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001972687403255404,formula,1000000,1000000,1.0,4875000,4.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002321462532272086,formula,1000000,1000000,1.0,4875000,4.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5000000,5.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0024499691825189867,formula,1000000,1000000,1.0,5000000,5.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0009012932937523402,formula,1000000,1000000,1.0,5000000,5.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0019478727374211298,formula,1000000,1000000,1.0,5000000,5.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0022922605832506365,formula,1000000,1000000,1.0,5000000,5.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5125000,5.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0024199070724534037,formula,1000000,1000000,1.0,5125000,5.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008902340615009792,formula,1000000,1000000,1.0,5125000,5.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0019239715532577044,formula,1000000,1000000,1.0,5125000,5.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002264133621309904,formula,1000000,1000000,1.0,5125000,5.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5250000,5.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0023909251039419374,formula,1000000,1000000,1.0,5250000,5.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008795721911209326,formula,1000000,1000000,1.0,5250000,5.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0019009291465437396,formula,1000000,1000000,1.0,5250000,5.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0022370172704113435,formula,1000000,1000000,1.0,5250000,5.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5375000,5.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0023629601056169873,formula,1000000,1000000,1.0,5375000,5.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008692844431647896,formula,1000000,1000000,1.0,5375000,5.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0018786952922455436,formula,1000000,1000000,1.0,5375000,5.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0022108524256335637,formula,1000000,1000000,1.0,5375000,5.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5500000,5.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.00233595396033646,formula,1000000,1000000,1.0,5500000,5.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008593494375307946,formula,1000000,1000000,1.0,5500000,5.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0018572237837424501,formula,1000000,1000000,1.0,5500000,5.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0021855847109317635,formula,1000000,1000000,1.0,5500000,5.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5625000,5.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002309853096876317,formula,1000000,1000000,1.0,5625000,5.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.000849747466466985,formula,1000000,1000000,1.0,5625000,5.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0018364720286918456,formula,1000000,1000000,1.0,5625000,5.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002161164003550874,formula,1000000,1000000,1.0,5625000,5.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5750000,5.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002284608042739546,formula,1000000,1000000,1.0,5750000,5.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008404603300588068,formula,1000000,1000000,1.0,5750000,5.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0018164006934854257,formula,1000000,1000000,1.0,5750000,5.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0021375440156209645,formula,1000000,1000000,1.0,5750000,5.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,5875000,5.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0022601730295827805,formula,1000000,1000000,1.0,5875000,5.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008314711910736792,formula,1000000,1000000,1.0,5875000,5.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0017969733895396463,formula,1000000,1000000,1.0,5875000,5.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002114681924983206,formula,1000000,1000000,1.0,5875000,5.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6000000,6.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002236505644096901,formula,1000000,1000000,1.0,6000000,6.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008227644465271446,formula,1000000,1000000,1.0,6000000,6.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0017781563957248168,formula,1000000,1000000,1.0,6000000,6.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002092538048543871,formula,1000000,1000000,1.0,6000000,6.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6125000,6.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0022135665182802223,formula,1000000,1000000,1.0,6125000,6.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008143256137407435,formula,1000000,1000000,1.0,6125000,6.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0017599184121136762,formula,1000000,1000000,1.0,6125000,6.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0020710755524851504,formula,1000000,1000000,1.0,6125000,6.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6250000,6.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0021913190539568175,formula,1000000,1000000,1.0,6250000,6.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0008061412289979677,formula,1000000,1000000,1.0,6250000,6.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001742230340956898,formula,1000000,1000000,1.0,6250000,6.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0020502601945166956,formula,1000000,1000000,1.0,6250000,6.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6375000,6.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0021697291771533133,formula,1000000,1000000,1.0,6375000,6.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007981987571845343,formula,1000000,1000000,1.0,6375000,6.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001725065091397886,formula,1000000,1000000,1.0,6375000,6.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0020300600940635844,formula,1000000,1000000,1.0,6375000,6.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6500000,6.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002148765118583364,formula,1000000,1000000,1.0,6500000,6.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.000790486511033136,formula,1000000,1000000,1.0,6500000,6.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0017083974049447372,formula,1000000,1000000,1.0,6500000,6.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.002010445526881379,formula,1000000,1000000,1.0,6500000,6.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6625000,6.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0021283972170223517,formula,1000000,1000000,1.0,6625000,6.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007829935787890359,formula,1000000,1000000,1.0,6625000,6.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001692203699141311,formula,1000000,1000000,1.0,6625000,6.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.001991388741087921,formula,1000000,1000000,1.0,6625000,6.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6750000,6.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002108597742803874,formula,1000000,1000000,1.0,6750000,6.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.000775709759278054,formula,1000000,1000000,1.0,6750000,6.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0016764619272363309,formula,1000000,1000000,1.0,6750000,6.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.001972863792021648,formula,1000000,1000000,1.0,6750000,6.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,6875000,6.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002089340739048869,formula,1000000,1000000,1.0,6875000,6.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007686255034980263,formula,1000000,1000000,1.0,6875000,6.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001661151451950995,formula,1000000,1000000,1.0,6875000,6.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0019548463936910603,formula,1000000,1000000,1.0,6875000,6.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7000000,7.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0020706018785596673,formula,1000000,1000000,1.0,7000000,7.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007617318619730691,formula,1000000,1000000,1.0,7000000,7.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0016462529317011504,formula,1000000,1000000,1.0,7000000,7.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0019373137848807465,formula,1000000,1000000,1.0,7000000,7.0,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7125000,7.125,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0020523583345845755,formula,1000000,1000000,1.0,7125000,7.125,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007550204372105258,formula,1000000,1000000,1.0,7125000,7.125,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0016317482178473677,formula,1000000,1000000,1.0,7125000,7.125,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0019202446082350613,formula,1000000,1000000,1.0,7125000,7.125,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7250000,7.25,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.002034588663891643,formula,1000000,1000000,1.0,7250000,7.25,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.000748483340686209,formula,1000000,1000000,1.0,7250000,7.25,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0016176202617315576,formula,1000000,1000000,1.0,7250000,7.25,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0019036188008586296,formula,1000000,1000000,1.0,7250000,7.25,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7375000,7.375,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0020172727007896126,formula,1000000,1000000,1.0,7375000,7.375,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007421131538568889,formula,1000000,1000000,1.0,7375000,7.375,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.001603853030417262,formula,1000000,1000000,1.0,7375000,7.375,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0018874174951593492,formula,1000000,1000000,1.0,7375000,7.375,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7500000,7.5,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0020003914609050487,formula,1000000,1000000,1.0,7500000,7.5,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007359028927618744,formula,1000000,1000000,1.0,7500000,7.5,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0015904314301866827,formula,1000000,1000000,1.0,7500000,7.5,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0018716229288195398,formula,1000000,1000000,1.0,7500000,7.5,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7625000,7.625,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.001983927053671664,formula,1000000,1000000,1.0,7625000,7.625,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007298459758296378,formula,1000000,1000000,1.0,7625000,7.625,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0015773412369644417,formula,1000000,1000000,1.0,7625000,7.625,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0018562183629184821,formula,1000000,1000000,1.0,7625000,7.625,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7750000,7.75,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.001967862602614704,formula,1000000,1000000,1.0,7750000,7.75,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007239361945520775,formula,1000000,1000000,1.0,7750000,7.75,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0015645690329388732,formula,1000000,1000000,1.0,7750000,7.75,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.001841188007348227,formula,1000000,1000000,1.0,7750000,7.75,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,7875000,7.875,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0019521821726228598,formula,1000000,1000000,1.0,7875000,7.875,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007181676867293498,formula,1000000,1000000,1.0,7875000,7.875,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0015521021487388236,formula,1000000,1000000,1.0,7875000,7.875,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.0018265169527671363,formula,1000000,1000000,1.0,7875000,7.875,1.0,1e-06,pool,second_order_add_remove
 IdealShuffle,0.0054782976348920435,formula,1000000,1000000,1.0,8000000,8.0,1.0,1e-06,ideal_shuffle,second_order_shuffle
+IdealShuffle (same M padding),0.0019368707034951944,formula,1000000,1000000,1.0,8000000,8.0,1.0,1e-06,ideal_shuffle_padded,second_order_shuffle_same_public_padding
 Drop (matched padding),0.0007125349120231506,formula,1000000,1000000,1.0,8000000,8.0,1.0,1e-06,drop,second_order_matched_drop
 Pool (replacement),0.0015399286105994665,formula,1000000,1000000,1.0,8000000,8.0,1.0,1e-06,pool,second_order_replacement
+Pool (add/remove),0.001812191108424507,formula,1000000,1000000,1.0,8000000,8.0,1.0,1e-06,pool,second_order_add_remove

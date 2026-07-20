@@ -1,0 +1,23 @@
+{
+  "admitted_rows": 108538,
+  "bounded_sum_workload": "weekly hours divided by 99",
+  "clean_file": "datasets/acs2024/utility.npz",
+  "clean_sha256": "d9ca56302982c41ddd640afb3098dd9fbede8f26283ac8315763f1fa1d761123",
+  "dataset": "ACS 2024",
+  "filter": "AGEP in [16,90], WKHP in [1,99], and nonmissing OCCP",
+  "heavy_hitter_domain_size": 4096,
+  "heavy_hitter_workload": "top-50 occupation codes",
+  "other_code": 4095,
+  "range_domain_size": 256,
+  "range_workload": "age over 256 public bins spanning [16,90]",
+  "raw_category_count": 529,
+  "raw_rows": 210150,
+  "reference_category_code": 0,
+  "reference_category_count": 3054,
+  "reference_category_label": "0440",
+  "retained_category_count": 529,
+  "sampling": "without replacement within each epoch",
+  "snapshot": "2024 ACS 1-year New York person PUMS",
+  "source_sha256": "89d73997653d2a1d1b535a4a6618987819390b57a6022a167ec76fb8c7bf6699",
+  "source_url": "https://www2.census.gov/programs-surveys/acs/data/pums/2024/1-Year/csv_pny.zip"
+}

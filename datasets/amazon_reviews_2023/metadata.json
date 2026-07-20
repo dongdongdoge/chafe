@@ -1,0 +1,23 @@
+{
+  "admitted_rows": 499463,
+  "bounded_sum_workload": "rating divided by 5",
+  "clean_file": "datasets/amazon_reviews_2023/utility.npz",
+  "clean_sha256": "1966451f532d9a624275a6294bc178039f9553f072bf3e941cccd1ff03f3f44f",
+  "dataset": "Amazon Reviews'23",
+  "filter": "All Beauty reviews from 2018-01-01 through 2023-09-30 with valid rating and parent_asin",
+  "heavy_hitter_domain_size": 4096,
+  "heavy_hitter_workload": "top-50 parent products",
+  "other_code": 4095,
+  "range_domain_size": 256,
+  "range_workload": "review timestamp over 256 bins spanning the admitted interval",
+  "raw_category_count": 93384,
+  "raw_rows": 701528,
+  "reference_category_code": 0,
+  "reference_category_count": 1513,
+  "reference_category_label": "B07C533XCW",
+  "retained_category_count": 4095,
+  "sampling": "without replacement within each epoch",
+  "snapshot": "Amazon Reviews'23 All Beauty, interactions from 2018 onward",
+  "source_sha256": "ee00e66835567c3f12fde6a482f8d7055c22cac2d0924f677263affdd8a0e349",
+  "source_url": "https://mcauleylab.ucsd.edu/public_datasets/data/amazon_2023/raw/review_categories/All_Beauty.jsonl.gz"
+}

@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
 
 # Local environments
 .venv/
@@ -23,6 +24,29 @@ figures/*.tex
 evaluation.tex
 related_work.tex
 
+# Local manuscript packages, revision workspaces, and render outputs. These
+# are not part of the public evaluation artifact repository.
+chafe-vldb-*.zip
+chafe-vldb-revised-source*/
+chafe-vldb-submission-source*/
+chafe_vldb_*.tex
+chafe_vldb_*.md
+vldb27_chafe_08_src/
+vldb27_chafe_latest_*/
+revisions/
+slides/
+tmp/
+output/
+layout-check*.pdf
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+
 # Local editor state
 .vscode/
 .idea/
@@ -32,6 +56,13 @@ related_work.tex
 datasets/adult/adult.data
 datasets/adult/adult.test
 datasets/adult/adult.names
+
+# Reproducible raw downloads for the modern utility workloads.  Compact
+# preprocessed snapshots and metadata remain available to the artifact.
+datasets/acs2024/csv_pny.zip
+datasets/nyc_tlc2024/yellow_tripdata_2024-01.parquet
+datasets/amazon_reviews_2023/*.jsonl.gz
+datasets/covertype/covtype.data.gz
 
 # Earlier project scaffold kept locally but excluded from this top-level artifact.
 chafe/

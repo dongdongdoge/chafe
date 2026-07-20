@@ -1,0 +1,4 @@
+pair,m,eps0,delta,alpha_exact_fraction,epsilon_exact,source_type,accounting_scope,output_representation,family_alpha_exact_fraction,family_epsilon_exact,is_worst_case
+ones_0_to_1,3,ln(3),1/1000,3367/1125,1.096239104522553,exact_accountant,fixed_size_replacement_exhaustive,binary_report_count,3367/1125,1.096239104522553,true
+ones_1_to_2,3,ln(3),1/1000,1117/375,1.0914757730987903,exact_accountant,fixed_size_replacement_exhaustive,binary_report_count,3367/1125,1.096239104522553,false
+ones_2_to_3,3,ln(3),1/1000,3367/1125,1.096239104522553,exact_accountant,fixed_size_replacement_exhaustive,binary_report_count,3367/1125,1.096239104522553,true

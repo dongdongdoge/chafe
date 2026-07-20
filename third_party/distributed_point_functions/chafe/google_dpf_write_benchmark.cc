@@ -55,6 +55,8 @@ struct Inputs {
 struct TimingSummary {
   double mean_seconds_per_report = 0.0;
   double se_seconds_per_report = 0.0;
+  double p50_seconds_per_report = 0.0;
+  double p95_seconds_per_report = 0.0;
   uint64_t checksum = 0;
 };
 
@@ -97,6 +99,7 @@ struct DetailedTimingSummary {
 
 constexpr int kCountBits = 8;
 constexpr uint64_t kCountMask = (uint64_t{1} << kCountBits) - 1;
+constexpr uint64_t kPayloadMask = (uint64_t{1} << (64 - kCountBits)) - 1;
 
 template <typename T>
 T Unwrap(absl::StatusOr<T> value, const std::string& context) {
@@ -196,6 +199,24 @@ double StandardError(const std::vector<T>& values) {
   }
   const double variance = ss / static_cast<double>(values.size() - 1);
   return std::sqrt(variance) / std::sqrt(static_cast<double>(values.size()));
+}
+
+template <typename T>
+double Quantile(const std::vector<T>& values, double q) {
+  if (values.empty()) {
+    return 0.0;
+  }
+  std::vector<double> sorted;
+  sorted.reserve(values.size());
+  for (T value : values) {
+    sorted.push_back(static_cast<double>(value));
+  }
+  std::sort(sorted.begin(), sorted.end());
+  const double index = q * static_cast<double>(sorted.size() - 1);
+  const size_t lower = static_cast<size_t>(std::floor(index));
+  const size_t upper = static_cast<size_t>(std::ceil(index));
+  const double weight = index - static_cast<double>(lower);
+  return sorted[lower] * (1.0 - weight) + sorted[upper] * weight;
 }
 
 std::unique_ptr<DistributedPointFunction> CreateProductDpf(int log_n) {
@@ -306,6 +327,39 @@ void VerifyPacked(const Inputs& inputs, const std::vector<uint64_t>& packed) {
   }
 }
 
+void VerifyPackedShares(const Inputs& inputs,
+                        const std::vector<uint64_t>& packed0,
+                        const std::vector<uint64_t>& packed1) {
+  if (packed0.size() != packed1.size()) {
+    std::cerr << "packed share arrays have different lengths\n";
+    std::exit(3);
+  }
+  std::vector<uint32_t> expected_occ(packed0.size(), 0);
+  std::vector<uint64_t> expected_pay(packed0.size(), 0);
+  for (size_t i = 0; i < inputs.slots.size(); ++i) {
+    const uint64_t slot = inputs.slots[i];
+    expected_occ[slot] += 1;
+    expected_pay[slot] += inputs.payloads[i];
+  }
+  for (size_t i = 0; i < packed0.size(); ++i) {
+    const uint64_t low0 = packed0[i] & kCountMask;
+    const uint64_t low1 = packed1[i] & kCountMask;
+    const uint64_t low_sum = low0 + low1;
+    const uint32_t occ = static_cast<uint32_t>(low_sum & kCountMask);
+    const uint64_t carry = low_sum >> kCountBits;
+    const uint64_t payload_share0 = ((packed0[i] >> kCountBits) + carry) &
+                                    kPayloadMask;
+    const uint64_t payload_share1 = (packed1[i] >> kCountBits) & kPayloadMask;
+    const uint64_t pay = (payload_share0 + payload_share1) & kPayloadMask;
+    if (occ != expected_occ[i] || pay != expected_pay[i]) {
+      std::cerr << "packed share extraction mismatch at slot " << i
+                << ": got (" << occ << ", " << pay << ") expected ("
+                << expected_occ[i] << ", " << expected_pay[i] << ")\n";
+      std::exit(3);
+    }
+  }
+}
+
 void RunPackedRange(const Config& cfg, const Inputs& inputs, int begin, int end,
                     PackedWorkerState* state) {
   auto dpf = CreateIntegerDpf<uint64_t>(cfg.log_n);
@@ -375,14 +429,21 @@ RunResult RunPackedOnce(const Config& cfg, const Inputs& inputs) {
     }
   }
 
+  std::vector<uint64_t> packed0(n, 0);
+  std::vector<uint64_t> packed1(n, 0);
   std::vector<uint64_t> packed(n, 0);
   RunResult result;
   for (const auto& state : states) {
     AddTiming(result, state->result);
     for (size_t i = 0; i < n; ++i) {
-      packed[i] += state->packed0[i] + state->packed1[i];
+      packed0[i] += state->packed0[i];
+      packed1[i] += state->packed1[i];
     }
   }
+  for (size_t i = 0; i < n; ++i) {
+    packed[i] = packed0[i] + packed1[i];
+  }
+  VerifyPackedShares(inputs, packed0, packed1);
   VerifyPacked(inputs, packed);
   result.checksum = ChecksumPacked(packed);
   return result;
@@ -601,14 +662,24 @@ DetailedTimingSummary TimeMode(const Config& cfg, Fn fn) {
     key_bytes_per_report.push_back(static_cast<double>(run.key_bytes) / cfg.reports);
   }
   DetailedTimingSummary summary;
-  summary.total = TimingSummary{Mean(seconds_per_report), StandardError(seconds_per_report), checksum};
+  summary.total = TimingSummary{Mean(seconds_per_report), StandardError(seconds_per_report),
+                                Quantile(seconds_per_report, 0.50),
+                                Quantile(seconds_per_report, 0.95), checksum};
   summary.keygen =
-      TimingSummary{Mean(keygen_seconds_per_report), StandardError(keygen_seconds_per_report), checksum};
+      TimingSummary{Mean(keygen_seconds_per_report), StandardError(keygen_seconds_per_report),
+                    Quantile(keygen_seconds_per_report, 0.50),
+                    Quantile(keygen_seconds_per_report, 0.95), checksum};
   summary.context =
-      TimingSummary{Mean(context_seconds_per_report), StandardError(context_seconds_per_report), checksum};
-  summary.eval = TimingSummary{Mean(eval_seconds_per_report), StandardError(eval_seconds_per_report), checksum};
+      TimingSummary{Mean(context_seconds_per_report), StandardError(context_seconds_per_report),
+                    Quantile(context_seconds_per_report, 0.50),
+                    Quantile(context_seconds_per_report, 0.95), checksum};
+  summary.eval = TimingSummary{Mean(eval_seconds_per_report), StandardError(eval_seconds_per_report),
+                               Quantile(eval_seconds_per_report, 0.50),
+                               Quantile(eval_seconds_per_report, 0.95), checksum};
   summary.accumulate = TimingSummary{Mean(accumulate_seconds_per_report),
-                                     StandardError(accumulate_seconds_per_report), checksum};
+                                     StandardError(accumulate_seconds_per_report),
+                                     Quantile(accumulate_seconds_per_report, 0.50),
+                                     Quantile(accumulate_seconds_per_report, 0.95), checksum};
   summary.key_bytes_per_report = Mean(key_bytes_per_report);
   return summary;
 }
@@ -620,6 +691,8 @@ void PrintRow(const std::string& method, const TimingSummary& summary,
   std::cout << method << ","
             << summary.mean_seconds_per_report * 1000.0 << ","
             << summary.se_seconds_per_report * 1000.0 << ","
+            << summary.p50_seconds_per_report * 1000.0 << ","
+            << summary.p95_seconds_per_report * 1000.0 << ","
             << normalized_work << ","
             << time_ratio_vs_packed << ","
             << "microbenchmark,"
@@ -641,6 +714,8 @@ void PrintBreakdownRow(const std::string& method, const std::string& phase,
             << phase << ","
             << summary.mean_seconds_per_report * 1000.0 << ","
             << summary.se_seconds_per_report * 1000.0 << ","
+            << summary.p50_seconds_per_report * 1000.0 << ","
+            << summary.p95_seconds_per_report * 1000.0 << ","
             << key_bytes_per_report << ","
             << normalized_work << ","
             << "microbenchmark,"
@@ -667,7 +742,7 @@ int main(int argc, char** argv) {
       dual.total.mean_seconds_per_report / packed.total.mean_seconds_per_report;
 
   if (cfg.breakdown) {
-    std::cout << "method,phase,time_ms_per_report,standard_error_ms,"
+    std::cout << "method,phase,time_ms_per_report,standard_error_ms,p50_ms_per_report,p95_ms_per_report,"
                  "key_bytes_per_report,normalized_expansion_work,source_type,"
                  "benchmark,N,log_n,reports_per_repeat,repeats,threads,cpu_acceleration,checksum\n";
     PrintBreakdownRow("Google DPF packed64", "total", packed.total,
@@ -703,7 +778,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::cout << "method,time_ms_per_report,standard_error_ms,"
+  std::cout << "method,time_ms_per_report,standard_error_ms,p50_ms_per_report,p95_ms_per_report,"
                "normalized_expansion_work,time_ratio_vs_packed,source_type,"
                "benchmark,N,log_n,reports_per_repeat,repeats,threads,cpu_acceleration,checksum\n";
   PrintRow("Google DPF packed64", packed.total, 1.0, 1.0, cfg);

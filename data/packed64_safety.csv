@@ -1,0 +1,3 @@
+configuration,m,N,rho,count_bits,payload_bits,max_report_payload,unsafe_occupancy_threshold,log10_epoch_overflow_upper_bound,bound,source_type
+ingestion_projection,100000,131072,0.762939453125,8,56,2147483647,256,-530.2950749559595,N*(e*rho/L)^L,formula
+largest_real_workload,300000,300000,1.0,8,56,2147483647,256,-499.8529224978813,N*(e*rho/L)^L,formula

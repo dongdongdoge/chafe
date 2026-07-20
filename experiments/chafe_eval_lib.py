@@ -59,39 +59,79 @@ def kappa(eps0: float) -> float:
     return math.exp(eps0) + math.exp(-eps0) - 2.0
 
 
+def epsilon_proxy_from_eta(eta: float, delta: float) -> float:
+    """Return the labeled high-privacy proxy sqrt(2 eta log(1/delta)).
+
+    This is a second-order design score, not a finite-mechanism DP accountant.
+    Keeping the conversion in one function makes every formula CSV implement
+    Equation (epsilon-proxy-conversion) in the paper literally.
+    """
+    if eta < 0.0:
+        raise ValueError("eta must be nonnegative")
+    if not 0.0 < delta < 1.0:
+        raise ValueError("delta must lie in (0,1)")
+    return math.sqrt(2.0 * eta * math.log(1.0 / delta))
+
+
 def eps_ideal_shuffle(eps0: float, m: int, delta: float) -> float:
-    return math.sqrt(2.0 * kappa(eps0) * math.log(1.0 / delta) / float(m))
+    if m <= 0:
+        raise ValueError("m must be positive")
+    return epsilon_proxy_from_eta(kappa(eps0) / float(m), delta)
+
+
+def eps_ideal_padded(eps0: float, M: int, delta: float) -> float:
+    """Quadratic ideal-shuffle reference after matched padding to length M."""
+    if M <= 0:
+        raise ValueError("M must be positive")
+    return epsilon_proxy_from_eta(kappa(eps0) / float(M), delta)
 
 
 def eps_drop_proxy(eps0: float, rho: float, M: int, delta: float) -> float:
+    if rho <= 0.0 or M <= 0:
+        raise ValueError("rho and M must be positive")
     eta = math.exp(-2.0 * rho) * kappa(eps0) / float(M)
-    return math.sqrt(2.0 * eta * math.log(1.0 / delta))
+    return epsilon_proxy_from_eta(eta, delta)
 
 
 def eps_pool_replacement(eps0: float, rho: float, M: int, delta: float) -> float:
+    """Homogeneous-background Pool proxy using the proven 1/(c+1) contraction."""
+    if rho <= 0.0 or M <= 0:
+        raise ValueError("rho and M must be positive")
     eta = ((1.0 - math.exp(-rho)) / rho) * kappa(eps0) / float(M)
-    return math.sqrt(2.0 * eta * math.log(1.0 / delta))
+    return epsilon_proxy_from_eta(eta, delta)
+
+
+def eps_pool_replacement_generic(eps0: float, M: int, delta: float) -> float:
+    """Generic Pool replacement proxy using only data processing (beta_c <= 1)."""
+    return eps_ideal_padded(eps0, M, delta)
 
 
 def eps_pool_add_remove(eps0: float, rho: float, M: int, delta: float) -> float:
+    """I.i.d.-background Pool proxy using exchangeable convolution contraction."""
+    if rho <= 0.0 or M <= 0:
+        raise ValueError("rho and M must be positive")
     a0 = (1.0 - math.exp(-rho)) / rho - math.exp(-rho)
     ap = (1.0 - math.exp(-rho)) / rho
     eta = (a0 + ap * kappa(eps0)) / float(M)
-    return math.sqrt(2.0 * eta * math.log(1.0 / delta))
+    return epsilon_proxy_from_eta(eta, delta)
 
 
 def invert_eps0(
     target_eps: float,
     fn: Callable[[float], float],
-    lo: float = 1e-4,
+    lo: float = 0.0,
     hi: float = 10.0,
     tol: float = 1e-8,
 ) -> float:
-    if target_eps <= 0:
-        raise ValueError("target_eps must be positive")
+    if target_eps < 0.0:
+        raise ValueError("target_eps must be nonnegative")
     flo = fn(lo)
     fhi = fn(hi)
-    if target_eps < flo:
+    if target_eps < flo - tol:
+        raise ValueError(
+            f"target epsilon {target_eps} is below the proxy floor {flo} at eps0={lo}"
+        )
+    if target_eps <= flo + tol:
         return lo
     if target_eps > fhi:
         raise ValueError(
