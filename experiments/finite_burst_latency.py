@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 
 from chafe_eval_lib import DATA_DIR, read_csv, write_csv
+from gpu_dpf_interface import interpolate_rate, load_rows
 
 
 REPORT_COUNT = 100_000
@@ -66,32 +67,8 @@ def _cpu_rate_at_target_domain() -> tuple[float, float, float]:
 
 
 def _gpu_rate_at_target_domain() -> tuple[float, int, int]:
-    rows = sorted(
-        [
-            row
-            for row in read_csv(DATA_DIR / "fig_gpu_dpf_external.csv")
-            if row["source_type"] == "external_artifact_measurement"
-        ],
-        key=lambda row: int(row["N"]),
-    )
-    exact = [row for row in rows if int(row["N"]) == N]
-    if exact:
-        return float(exact[0]["dpf_per_second"]), N, N
-    lower = max(
-        (row for row in rows if int(row["N"]) < N), key=lambda row: int(row["N"])
-    )
-    upper = min(
-        (row for row in rows if int(row["N"]) > N), key=lambda row: int(row["N"])
-    )
-    log_n = math.log2(N)
-    lower_log_n = math.log2(int(lower["N"]))
-    upper_log_n = math.log2(int(upper["N"]))
-    weight = (log_n - lower_log_n) / (upper_log_n - lower_log_n)
-    log_rate = (
-        (1.0 - weight) * math.log(float(lower["dpf_per_second"]))
-        + weight * math.log(float(upper["dpf_per_second"]))
-    )
-    return math.exp(log_rate), int(lower["N"]), int(upper["N"])
+    rate = interpolate_rate(load_rows(), N)
+    return rate.dpf_per_second, rate.lower_n, rate.upper_n
 
 
 def _cgp_shuffle_seconds() -> float:

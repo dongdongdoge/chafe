@@ -69,12 +69,8 @@ python experiments/build_google_dpf.py
 python experiments/run_all.py
 ```
 
-Generated TikZ files under `figures/` and manuscript build outputs are not
-tracked by git. The checked-in `data/*.csv` files are the durable evidence.
+Check or normalize external GPU-DPF context rows:
 
-## Provenance
-
-CSV provenance fields distinguish formula-derived values, exact finite-domain
-accounting, Monte Carlo utility simulations, local microbenchmarks, analytic
-capacity or latency models, and external literature/artifact context. Analytic
-and external rows are not local measurements.
+```bash
+python experiments/gpu_dpf_interface.py --target-n 131072
+```

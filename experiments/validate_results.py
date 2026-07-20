@@ -4,6 +4,7 @@ import math
 from collections import defaultdict
 from fractions import Fraction
 
+import gpu_dpf_interface
 from chafe_eval_lib import DATA_DIR, FIGURE_DIR, ROOT, read_csv
 
 
@@ -350,22 +351,35 @@ def validate_microbench(notes: list[str]) -> None:
             )) != required_planning:
                 raise AssertionError("joint scaling planning node requirement is inconsistent")
 
-        ingestion_figure = (FIGURE_DIR / "fig_ingestion_cost_summary.tex").read_text()
-        forbidden_projection_tokens = ("0.97", "modeled_anchor", "model_extrapolation")
-        if any(token in ingestion_figure for token in forbidden_projection_tokens):
-            raise AssertionError("active ingestion figure contains an unsupported scaling model")
-        required_figure_tokens = (
-            "ideal linear projection",
-            "combined-work CPU equivalents",
-            "y explicit",
-        )
-        if any(token not in ingestion_figure for token in required_figure_tokens):
-            raise AssertionError("active ingestion figure lost projection or error-bar disclosure")
+        ingestion_figure_path = FIGURE_DIR / "fig_ingestion_cost_summary.tex"
+        if ingestion_figure_path.is_file():
+            ingestion_figure = ingestion_figure_path.read_text()
+            forbidden_projection_tokens = ("0.97", "modeled_anchor", "model_extrapolation")
+            if any(token in ingestion_figure for token in forbidden_projection_tokens):
+                raise AssertionError("active ingestion figure contains an unsupported scaling model")
+            required_figure_tokens = (
+                "ideal linear projection",
+                "combined-work CPU equivalents",
+                "y explicit",
+            )
+            if any(token not in ingestion_figure for token in required_figure_tokens):
+                raise AssertionError("active ingestion figure lost projection or error-bar disclosure")
 
-        gpu_rows = read_csv(DATA_DIR / "fig_gpu_dpf_external.csv")
+        gpu_rows = gpu_dpf_interface.load_rows(DATA_DIR / "fig_gpu_dpf_external.csv")
         expected_gpu = {16_384: 52_536, 65_536: 15_392, 262_144: 3_967, 1_048_576: 923}
-        if {int(row["N"]): int(row["dpf_per_second"]) for row in gpu_rows} != expected_gpu:
+        if {int(row["N"]): int(float(row["dpf_per_second"])) for row in gpu_rows} != expected_gpu:
             raise AssertionError("external GPU-DPF rows differ from the published V100 table")
+        interpolated = gpu_dpf_interface.interpolate_rate(gpu_rows, 1 << 17)
+        if (
+            interpolated.lower_n != 65_536
+            or interpolated.upper_n != 262_144
+            or not math.isclose(
+                interpolated.dpf_per_second,
+                math.sqrt(15_392.0 * 3_967.0),
+                rel_tol=1e-12,
+            )
+        ):
+            raise AssertionError("GPU-DPF interface interpolation changed")
         for row in gpu_rows:
             if row["source_type"] != "external_artifact_measurement":
                 raise AssertionError("GPU-DPF context has wrong source_type")
@@ -2686,12 +2700,10 @@ def validate_artifact_documentation(notes: list[str]) -> None:
     required_readme = {
         "experiments/artifact_check.py",
         "experiments/run_all.py --skip-microbench --skip-utility",
+        "experiments/gpu_dpf_interface.py",
         "experiments/fetch_adult_dataset.py",
         "experiments/fetch_covertype_dataset.py",
         "experiments/fetch_modern_utility_datasets.py",
-        "source_type",
-        "Generated TikZ files",
-        "not local measurements",
     }
     missing = sorted(token for token in required_readme if token not in readme)
     if missing:

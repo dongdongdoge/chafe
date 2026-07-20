@@ -10,6 +10,7 @@ def test_release_file_set_contains_reproduction_inputs_without_raw_downloads() -
         "ARTIFACT.md",
         "requirements.txt",
         "experiments/artifact_check.py",
+        "experiments/gpu_dpf_interface.py",
         "experiments/run_all.py",
         "experiments/validate_results.py",
         "data/fig_modern_utility.csv",

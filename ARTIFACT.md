@@ -25,6 +25,7 @@ measurements or Monte Carlo rows as newly generated values.
 | Privacy formulas and exact accounting | `data/fig_privacy*.csv`, `data/fig_*account*.csv` | Closed-form curves and finite-domain accountants. |
 | Workload utility | `data/fig_*utility*.csv`, `data/fig_*workload*.csv` | Seeded Monte Carlo simulations over processed snapshots. |
 | DPF write backend | `data/fig_dpf_*.csv`, `data/fig_product_vs_dual_microbench.csv` | Local Google DPF microbenchmarks when regenerated; checked-in rows preserve their original provenance. |
+| GPU-DPF interface | `experiments/gpu_dpf_interface.py`, `data/fig_gpu_dpf_external.csv` | Adapter for cited external GPU-DPF rows; not a local Chafe GPU measurement. |
 | Capacity and latency models | `data/fig_ingestion*.csv`, `data/fig_finite_burst_latency.csv` | Analytic models from measured or literature-sourced inputs. |
 
 Generated TikZ figures are reproducible from the CSVs and scripts, but they are

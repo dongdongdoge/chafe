@@ -17,6 +17,7 @@ REQUIRED_PATHS = (
     "requirements.txt",
     "experiments/run_all.py",
     "experiments/validate_results.py",
+    "experiments/gpu_dpf_interface.py",
     "experiments/make_modern_utility_figure.py",
     "datasets/adult/adult_clean.csv",
     "datasets/adult/metadata.json",
