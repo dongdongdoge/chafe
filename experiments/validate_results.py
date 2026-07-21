@@ -533,12 +533,20 @@ def validate_cgp_shuffle_model(notes: list[str]) -> None:
         "CGP payload-only ideal (author-derived)",
     }
     expected = {(m, method) for m in report_counts for method in methods}
-    observed = {(int(row["m"]), row["method"]) for row in rows}
-    if observed != expected or len(rows) != len(expected):
+    cgp_rows = [row for row in rows if row["method"] in methods]
+    observed = {(int(row["m"]), row["method"]) for row in cgp_rows}
+    doppio_rows = [
+        row
+        for row in rows
+        if row["method"] == "Doppio 2+1 online shuffle (paper Table 5)"
+    ]
+    if observed != expected or len(cgp_rows) != len(expected):
         raise AssertionError("CGP model grid is incomplete or duplicated")
+    if len(doppio_rows) != 4:
+        raise AssertionError("Doppio Table-5 comparison rows are missing")
 
     grouped: dict[int, dict[str, dict[str, str]]] = defaultdict(dict)
-    for row in rows:
+    for row in cgp_rows:
         m = int(row["m"])
         N = int(row["N"])
         log_n = int(row["log_n"])
@@ -662,6 +670,38 @@ def validate_cgp_shuffle_model(notes: list[str]) -> None:
             ):
                 raise AssertionError("CGP payload-only row does not disclose its idealized scope")
         grouped[m][row["method"]] = row
+
+    doppio_expected = {
+        (10_000, 64): (0.42, 0.0, 0.16),
+        (10_000, 1_024): (3.68, 0.0, 2.56),
+        (100_000, 64): (13.17, 0.0, 1.60),
+        (100_000, 1_024): (168.24, 0.0, 25.60),
+    }
+    for row in doppio_rows:
+        key = (int(row["m"]), int(row["payload_bits"]))
+        if key not in doppio_expected:
+            raise AssertionError("unexpected Doppio Table-5 parameter row")
+        expected_time, expected_execution_mb, expected_reconstruction_mb = doppio_expected[key]
+        if (
+            row["source_type"] != "literature_reported_measurement"
+            or row["measured"] != "false"
+            or row["citation_key"] != "dong2025doppio"
+            or row["source_table"] != "Table 5"
+            or "not local Chafe measurements" not in row["formula_scope"]
+        ):
+            raise AssertionError("Doppio row has ambiguous literature-measurement provenance")
+        if not (
+            math.isclose(float(row["cost_seconds"]), expected_time, rel_tol=0.0, abs_tol=1e-12)
+            and math.isclose(float(row["online_execution_comm_mb"]), expected_execution_mb, rel_tol=0.0, abs_tol=1e-12)
+            and math.isclose(float(row["reconstruction_comm_mb"]), expected_reconstruction_mb, rel_tol=0.0, abs_tol=1e-12)
+            and math.isclose(
+                float(row["communication_mb"]),
+                expected_execution_mb + expected_reconstruction_mb,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+        ):
+            raise AssertionError("Doppio Table-5 value changed unexpectedly")
 
     for m, group in grouped.items():
         full = float(
@@ -824,8 +864,9 @@ def validate_finite_burst_latency(notes: list[str]) -> None:
         "Chafe GPU-kernel proxy (interpolated)",
         "Chafe CPU 31-equivalent (ideal capacity)",
         "CGP full model",
+        "Doppio 2+1 model",
     }
-    if {row["method"] for row in rows} != expected_methods or len(rows) != 4:
+    if {row["method"] for row in rows} != expected_methods or len(rows) != 5:
         raise AssertionError("finite-burst latency grid is incomplete or duplicated")
     for row in rows:
         if (int(row["m"]), int(row["N"])) != (100_000, 1 << 17):
@@ -841,6 +882,7 @@ def validate_finite_burst_latency(notes: list[str]) -> None:
     gpu = by_method["Chafe GPU-kernel proxy (interpolated)"]
     cluster = by_method["Chafe CPU 31-equivalent (ideal capacity)"]
     cgp = by_method["CGP full model"]
+    doppio = by_method["Doppio 2+1 model"]
     if cpu["source_type"] != "analytic_cost_from_measured_cpu_inputs":
         raise AssertionError("CPU burst point lost its measured-input provenance")
     if gpu["source_type"] != "analytic_cost_from_external_gpu_kernel":
@@ -855,6 +897,8 @@ def validate_finite_burst_latency(notes: list[str]) -> None:
         raise AssertionError("finite-burst CPU scenario is not an explicit ideal projection")
     if cgp["source_type"] != "arrival_plus_literature_derived_analytic_cost":
         raise AssertionError("CGP burst point lost its literature-derived provenance")
+    if doppio["source_type"] != "arrival_plus_literature_reported_measurement":
+        raise AssertionError("Doppio burst point lost its literature-reported provenance")
     for row in (cpu, gpu, cluster):
         arrival = float(row["arrival_seconds"])
         rate = float(row["service_rate_reports_per_s"])
@@ -871,19 +915,42 @@ def validate_finite_burst_latency(notes: list[str]) -> None:
             )
         ):
             raise AssertionError("Chafe finite-burst queue identity changed")
+        if not (
+            math.isclose(float(row["online_execution_comm_mb"]), 0.0)
+            and math.isclose(float(row["communication_mb"]), float(row["epoch_close_comm_mb"]))
+            and 2.5 < float(row["communication_mb"]) < 2.8
+        ):
+            raise AssertionError("Chafe finite-burst communication scope changed")
+    for literature_row in (cgp, doppio):
+        if not (
+            math.isclose(float(literature_row["processed_by_last_arrival"]), 0.0)
+            and math.isclose(
+                float(literature_row["backlog_at_last_arrival"]),
+                float(literature_row["m"]),
+            )
+            and math.isclose(
+                float(literature_row["total_seconds"]),
+                float(literature_row["arrival_seconds"]) + float(literature_row["post_arrival_seconds"]),
+            )
+        ):
+            raise AssertionError("literature batch row total must include collection plus shuffle")
     if not (
-        math.isclose(float(cgp["processed_by_last_arrival"]), 0.0)
-        and math.isclose(float(cgp["backlog_at_last_arrival"]), float(cgp["m"]))
-        and math.isclose(
-            float(cgp["total_seconds"]),
-            float(cgp["arrival_seconds"]) + float(cgp["post_arrival_seconds"]),
-        )
+        430.0 < float(cgp["communication_mb"]) < 450.0
+        and math.isclose(float(cgp["reconstruction_comm_mb"]), 0.0)
     ):
-        raise AssertionError("CGP total must include collection plus shuffle")
+        raise AssertionError("CGP communication accounting changed")
+    if not (
+        math.isclose(float(doppio["post_arrival_seconds"]), 13.17, rel_tol=0.0, abs_tol=1e-12)
+        and math.isclose(float(doppio["online_execution_comm_mb"]), 0.0, rel_tol=0.0, abs_tol=1e-12)
+        and math.isclose(float(doppio["reconstruction_comm_mb"]), 1.60, rel_tol=0.0, abs_tol=1e-12)
+        and math.isclose(float(doppio["communication_mb"]), 1.60, rel_tol=0.0, abs_tol=1e-12)
+    ):
+        raise AssertionError("Doppio Table-5 finite-burst value changed")
     if not (
         float(cluster["total_seconds"])
         < float(gpu["total_seconds"])
         < float(cgp["total_seconds"])
+        < float(doppio["total_seconds"])
         < float(cpu["total_seconds"])
     ):
         raise AssertionError("finite-burst ordering changed unexpectedly")
@@ -906,7 +973,8 @@ def validate_finite_burst_latency(notes: list[str]) -> None:
         raise AssertionError("finite-burst planned CPU capacity changed")
     notes.append(
         "Finite-burst latency passed dimensions, queue identities, capacity regimes, "
-        "CGP crossover, and provenance checks for CPU, external-GPU, and CGP inputs."
+        "CGP crossover, communication accounting, and provenance checks for CPU, "
+        "external-GPU, CGP, and Doppio inputs."
     )
 
 
@@ -1312,12 +1380,14 @@ def validate_source_types(notes: list[str]) -> None:
         "fig_cgp_shuffle_model.csv": {
             "literature_derived_analytic_cost",
             "author_derived_analytic_scenario",
+            "literature_reported_measurement",
         },
         "fig_epoch_close_scaling.csv": {"microbenchmark"},
         "fig_finite_burst_latency.csv": {
             "analytic_cost_from_measured_cpu_inputs",
             "analytic_cost_from_external_gpu_kernel",
             "arrival_plus_literature_derived_analytic_cost",
+            "arrival_plus_literature_reported_measurement",
         },
         "fig_full_release_proxy_utility.csv": {"monte_carlo_complete_release"},
         "fig_range_error_vs_epsilon.csv": {"monte_carlo"},

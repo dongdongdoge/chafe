@@ -44,6 +44,47 @@ PAYLOAD_ONLY_SCOPE = (
     "communication, computation, RTT, validation, collection, and analysis "
     "are free; not a protocol-independent lower bound"
 )
+DOPPIO_CITATION_KEY = "dong2025doppio"
+DOPPIO_SOURCE_TYPE = "literature_reported_measurement"
+DOPPIO_SCOPE = (
+    "Doppio Table 5 reported online Shuffle latency and communication; "
+    "communication is split into online inter-server execution and "
+    "curator reconstruction traffic; values are not local Chafe measurements"
+)
+DOPPIO_TABLE5_ROWS = (
+    {
+        "m": 10_000,
+        "payload_bits": 64,
+        "variant": "Doppio 2+1 online shuffle (paper Table 5)",
+        "cost_seconds": 0.42,
+        "online_execution_comm_mb": 0.0,
+        "reconstruction_comm_mb": 0.16,
+    },
+    {
+        "m": 10_000,
+        "payload_bits": 1_024,
+        "variant": "Doppio 2+1 online shuffle (paper Table 5)",
+        "cost_seconds": 3.68,
+        "online_execution_comm_mb": 0.0,
+        "reconstruction_comm_mb": 2.56,
+    },
+    {
+        "m": 100_000,
+        "payload_bits": 64,
+        "variant": "Doppio 2+1 online shuffle (paper Table 5)",
+        "cost_seconds": 13.17,
+        "online_execution_comm_mb": 0.0,
+        "reconstruction_comm_mb": 1.60,
+    },
+    {
+        "m": 100_000,
+        "payload_bits": 1_024,
+        "variant": "Doppio 2+1 online shuffle (paper Table 5)",
+        "cost_seconds": 168.24,
+        "online_execution_comm_mb": 0.0,
+        "reconstruction_comm_mb": 25.60,
+    },
+)
 
 
 def next_power_of_two(value: int) -> int:
@@ -183,6 +224,44 @@ def model_rows(report_counts: tuple[int, ...] = REPORT_COUNTS) -> list[dict]:
                 "source_type": "author_derived_analytic_scenario",
                 "cost_seconds": payload_only_ideal_seconds,
                 "formula_scope": PAYLOAD_ONLY_SCOPE,
+            }
+        )
+    for reported in DOPPIO_TABLE5_ROWS:
+        execution_comm_mb = float(reported["online_execution_comm_mb"])
+        reconstruction_comm_mb = float(reported["reconstruction_comm_mb"])
+        rows.append(
+            {
+                "m": reported["m"],
+                "N": "",
+                "log_n": "",
+                "T": "",
+                "d": "",
+                "security_bits": "",
+                "payload_bits": reported["payload_bits"],
+                "bandwidth_bits_per_second": "",
+                "aes_seconds_per_block": "",
+                "aes_calls_one_permute_share": "",
+                "communication_bits_one_permute_share": "",
+                "computation_seconds_one_permute_share": "",
+                "communication_seconds_one_permute_share": "",
+                "one_permute_share_seconds": "",
+                "full_shuffle_seconds": "",
+                "payload_only_ideal_seconds": "",
+                "measured": "false",
+                "citation_key": DOPPIO_CITATION_KEY,
+                "eprint_url": "",
+                "method": reported["variant"],
+                "source_type": DOPPIO_SOURCE_TYPE,
+                "cost_seconds": reported["cost_seconds"],
+                "formula_scope": DOPPIO_SCOPE,
+                "source_table": "Table 5",
+                "online_execution_comm_mb": execution_comm_mb,
+                "reconstruction_comm_mb": reconstruction_comm_mb,
+                "total_online_comm_mb": execution_comm_mb + reconstruction_comm_mb,
+                "communication_mb": execution_comm_mb + reconstruction_comm_mb,
+                "parameter_scope": (
+                    f"n={reported['m']}, ell={reported['payload_bits']} bits"
+                ),
             }
         )
     return rows

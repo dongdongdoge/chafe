@@ -9,7 +9,7 @@ Packed64 epoch-wide occupancy-overflow bounds passed.
 Local epoch-stage and scoped two-process loopback measurements passed provenance, configuration, repeat-count, timing-summary, byte-accounting, and output-count checks.
 CGP paper-derived full-shuffle and author-derived payload-only grids passed formula, minimization, citation, and non-measurement provenance checks.
 Measured two-process epoch-close scaling passed complete-grid, full-release correctness, byte-accounting, platform, and localhost-scope checks.
-Finite-burst latency passed dimensions, queue identities, capacity regimes, CGP crossover, and provenance checks for CPU, external-GPU, and CGP inputs.
+Finite-burst latency passed dimensions, queue identities, capacity regimes, CGP crossover, communication accounting, and provenance checks for CPU, external-GPU, CGP, and Doppio inputs.
 Proxy-calibrated Synthetic/Adult/Covertype releases passed the 54-row Pure IdealShuffle/Padded Ideal/Drop grid, method-specific release and dummy semantics, paired metrics, absolute-utility trends, tight-target gains, Adult crossovers, and non-central-DP scope checks.
 Source-type checks passed for all checked CSVs.
 Monte Carlo replicate-count checks passed.

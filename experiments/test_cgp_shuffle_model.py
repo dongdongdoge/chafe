@@ -33,25 +33,52 @@ class CgpShuffleModelTest(unittest.TestCase):
 
     def test_grid_and_provenance_are_explicit(self) -> None:
         rows = cgp.model_rows()
-        self.assertEqual(len(rows), 2 * len(cgp.REPORT_COUNTS))
-        self.assertEqual({row["m"] for row in rows}, set(cgp.REPORT_COUNTS))
+        self.assertEqual(len(rows), 2 * len(cgp.REPORT_COUNTS) + len(cgp.DOPPIO_TABLE5_ROWS))
+        self.assertEqual(
+            {row["m"] for row in rows if str(row["method"]).startswith("CGP")},
+            set(cgp.REPORT_COUNTS),
+        )
         self.assertEqual(
             {row["source_type"] for row in rows},
-            {"literature_derived_analytic_cost", "author_derived_analytic_scenario"},
+            {
+                "literature_derived_analytic_cost",
+                "author_derived_analytic_scenario",
+                "literature_reported_measurement",
+            },
         )
         self.assertEqual({row["measured"] for row in rows}, {"false"})
         self.assertEqual(
             {row["citation_key"] for row in rows},
-            {"DBLP:conf/asiacrypt/ChaseGP20"},
-        )
-        self.assertEqual(
-            {row["eprint_url"] for row in rows},
-            {"https://eprint.iacr.org/2019/1340"},
+            {"DBLP:conf/asiacrypt/ChaseGP20", "dong2025doppio"},
         )
         for row in rows:
             self.assertTrue(row["formula_scope"])
             self.assertTrue(math.isfinite(float(row["cost_seconds"])))
             self.assertGreater(float(row["cost_seconds"]), 0.0)
+        cgp_rows = [row for row in rows if str(row["method"]).startswith("CGP")]
+        self.assertEqual(
+            {row["eprint_url"] for row in cgp_rows},
+            {"https://eprint.iacr.org/2019/1340"},
+        )
+
+    def test_doppio_table5_rows_are_scoped(self) -> None:
+        rows = [
+            row
+            for row in cgp.model_rows()
+            if row["method"] == "Doppio 2+1 online shuffle (paper Table 5)"
+        ]
+        self.assertEqual(len(rows), 4)
+        row = next(
+            row
+            for row in rows
+            if row["m"] == 100_000 and row["payload_bits"] == 64
+        )
+        self.assertEqual(row["source_type"], "literature_reported_measurement")
+        self.assertEqual(row["citation_key"], "dong2025doppio")
+        self.assertAlmostEqual(row["cost_seconds"], 13.17)
+        self.assertAlmostEqual(row["online_execution_comm_mb"], 0.0)
+        self.assertAlmostEqual(row["reconstruction_comm_mb"], 1.60)
+        self.assertAlmostEqual(row["communication_mb"], 1.60)
 
     def test_cost_function_rejects_non_benes_domains(self) -> None:
         with self.assertRaises(ValueError):
