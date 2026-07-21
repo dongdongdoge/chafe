@@ -540,10 +540,17 @@ def validate_cgp_shuffle_model(notes: list[str]) -> None:
         for row in rows
         if row["method"] == "Doppio 2+1 online shuffle (paper Table 5)"
     ]
+    doppio_extrapolated_rows = [
+        row
+        for row in rows
+        if row["method"] == "Doppio 2+1 online shuffle (author extrapolation)"
+    ]
     if observed != expected or len(cgp_rows) != len(expected):
         raise AssertionError("CGP model grid is incomplete or duplicated")
     if len(doppio_rows) != 4:
         raise AssertionError("Doppio Table-5 comparison rows are missing")
+    if len(doppio_extrapolated_rows) != 1:
+        raise AssertionError("Doppio 1e6 extrapolated comparison row is missing")
 
     grouped: dict[int, dict[str, dict[str, str]]] = defaultdict(dict)
     for row in cgp_rows:
@@ -702,6 +709,30 @@ def validate_cgp_shuffle_model(notes: list[str]) -> None:
             )
         ):
             raise AssertionError("Doppio Table-5 value changed unexpectedly")
+
+    extrapolated = doppio_extrapolated_rows[0]
+    exponent = math.log(13.17 / 0.42) / math.log(10.0)
+    expected_time = 13.17 * 10.0**exponent
+    if (
+        int(extrapolated["m"]) != 1_000_000
+        or int(extrapolated["payload_bits"]) != 64
+        or extrapolated["source_type"] != "author_extrapolated_literature_model"
+        or extrapolated["measured"] != "false"
+        or extrapolated["citation_key"] != "dong2025doppio"
+        or extrapolated["source_table"] != "Table 5"
+        or "not a reported measurement" not in extrapolated["formula_scope"]
+        or "effective_power_law" not in extrapolated["scaling_model"]
+        or "AVX2" not in extrapolated["parallelism_scope"]
+    ):
+        raise AssertionError("Doppio extrapolated row has ambiguous provenance")
+    if not (
+        math.isclose(float(extrapolated["scaling_exponent"]), exponent, rel_tol=1e-12)
+        and math.isclose(float(extrapolated["cost_seconds"]), expected_time, rel_tol=1e-12)
+        and math.isclose(float(extrapolated["online_execution_comm_mb"]), 0.0, abs_tol=1e-12)
+        and math.isclose(float(extrapolated["reconstruction_comm_mb"]), 16.0, rel_tol=1e-12)
+        and math.isclose(float(extrapolated["communication_mb"]), 16.0, rel_tol=1e-12)
+    ):
+        raise AssertionError("Doppio 1e6 extrapolated value changed unexpectedly")
 
     for m, group in grouped.items():
         full = float(
@@ -1381,6 +1412,7 @@ def validate_source_types(notes: list[str]) -> None:
             "literature_derived_analytic_cost",
             "author_derived_analytic_scenario",
             "literature_reported_measurement",
+            "author_extrapolated_literature_model",
         },
         "fig_epoch_close_scaling.csv": {"microbenchmark"},
         "fig_finite_burst_latency.csv": {

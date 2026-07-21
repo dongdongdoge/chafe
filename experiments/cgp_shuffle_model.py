@@ -51,6 +51,14 @@ DOPPIO_SCOPE = (
     "communication is split into online inter-server execution and "
     "curator reconstruction traffic; values are not local Chafe measurements"
 )
+DOPPIO_EXTRAPOLATED_SOURCE_TYPE = "author_extrapolated_literature_model"
+DOPPIO_EXTRAPOLATED_SCOPE = (
+    "author extrapolation from the Doppio Table 5 64-bit rows at n=1e4 and "
+    "n=1e5; fits an effective power-law exponent under the paper's AVX2 and "
+    "multi-threaded implementation conditions; Doppio text reports super-linear "
+    "growth from memory pressure and quadratic computation, so this is not a "
+    "reported measurement"
+)
 DOPPIO_TABLE5_ROWS = (
     {
         "m": 10_000,
@@ -85,6 +93,73 @@ DOPPIO_TABLE5_ROWS = (
         "reconstruction_comm_mb": 25.60,
     },
 )
+DOPPIO_EXTRAPOLATION_TARGET_M = 1_000_000
+
+
+def doppio_extrapolated_64bit_row(
+    target_m: int = DOPPIO_EXTRAPOLATION_TARGET_M,
+) -> dict:
+    """Return the single author-extrapolated Doppio 64-bit point.
+
+    The scaling exponent is fit from the two reported 64-bit Table-5 rows.  That
+    empirical exponent already reflects the implementation conditions disclosed
+    by Doppio for its experiments, including AVX2 vectorization and
+    multi-threading; the row remains an extrapolation, not a measurement.
+    """
+    anchors = sorted(
+        (row for row in DOPPIO_TABLE5_ROWS if row["payload_bits"] == PAYLOAD_BITS),
+        key=lambda row: int(row["m"]),
+    )
+    if len(anchors) != 2:
+        raise ValueError("Doppio 64-bit extrapolation requires two Table-5 anchors")
+    low, high = anchors
+    n_low = float(low["m"])
+    n_high = float(high["m"])
+    t_low = float(low["cost_seconds"])
+    t_high = float(high["cost_seconds"])
+    c_high = float(high["reconstruction_comm_mb"])
+    if not (n_low < n_high < target_m and t_low > 0.0 and t_high > 0.0):
+        raise ValueError("invalid Doppio extrapolation anchors")
+    exponent = math.log(t_high / t_low) / math.log(n_high / n_low)
+    target_scale = float(target_m) / n_high
+    extrapolated_seconds = t_high * target_scale**exponent
+    reconstruction_comm_mb = c_high * target_scale
+    return {
+        "m": target_m,
+        "N": "",
+        "log_n": "",
+        "T": "",
+        "d": "",
+        "security_bits": "",
+        "payload_bits": PAYLOAD_BITS,
+        "bandwidth_bits_per_second": "",
+        "aes_seconds_per_block": "",
+        "aes_calls_one_permute_share": "",
+        "communication_bits_one_permute_share": "",
+        "computation_seconds_one_permute_share": "",
+        "communication_seconds_one_permute_share": "",
+        "one_permute_share_seconds": "",
+        "full_shuffle_seconds": "",
+        "payload_only_ideal_seconds": "",
+        "measured": "false",
+        "citation_key": DOPPIO_CITATION_KEY,
+        "eprint_url": "",
+        "method": "Doppio 2+1 online shuffle (author extrapolation)",
+        "source_type": DOPPIO_EXTRAPOLATED_SOURCE_TYPE,
+        "cost_seconds": extrapolated_seconds,
+        "formula_scope": DOPPIO_EXTRAPOLATED_SCOPE,
+        "source_table": "Table 5",
+        "online_execution_comm_mb": 0.0,
+        "reconstruction_comm_mb": reconstruction_comm_mb,
+        "total_online_comm_mb": reconstruction_comm_mb,
+        "communication_mb": reconstruction_comm_mb,
+        "parameter_scope": "n=1000000, ell=64 bits; extrapolated",
+        "scaling_exponent": exponent,
+        "scaling_model": "effective_power_law_from_reported_64bit_rows",
+        "extrapolated_from": "n=10000,ell=64 and n=100000,ell=64",
+        "parallelism_scope": "inherits Doppio AVX2 and multi-threaded experiment conditions",
+        "complexity_scope": "super-linear fit reflecting reported memory pressure and quadratic computation",
+    }
 
 
 def next_power_of_two(value: int) -> int:
@@ -264,6 +339,7 @@ def model_rows(report_counts: tuple[int, ...] = REPORT_COUNTS) -> list[dict]:
                 ),
             }
         )
+    rows.append(doppio_extrapolated_64bit_row())
     return rows
 
 

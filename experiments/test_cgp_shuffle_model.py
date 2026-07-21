@@ -33,7 +33,10 @@ class CgpShuffleModelTest(unittest.TestCase):
 
     def test_grid_and_provenance_are_explicit(self) -> None:
         rows = cgp.model_rows()
-        self.assertEqual(len(rows), 2 * len(cgp.REPORT_COUNTS) + len(cgp.DOPPIO_TABLE5_ROWS))
+        self.assertEqual(
+            len(rows),
+            2 * len(cgp.REPORT_COUNTS) + len(cgp.DOPPIO_TABLE5_ROWS) + 1,
+        )
         self.assertEqual(
             {row["m"] for row in rows if str(row["method"]).startswith("CGP")},
             set(cgp.REPORT_COUNTS),
@@ -44,6 +47,7 @@ class CgpShuffleModelTest(unittest.TestCase):
                 "literature_derived_analytic_cost",
                 "author_derived_analytic_scenario",
                 "literature_reported_measurement",
+                "author_extrapolated_literature_model",
             },
         )
         self.assertEqual({row["measured"] for row in rows}, {"false"})
@@ -79,6 +83,18 @@ class CgpShuffleModelTest(unittest.TestCase):
         self.assertAlmostEqual(row["online_execution_comm_mb"], 0.0)
         self.assertAlmostEqual(row["reconstruction_comm_mb"], 1.60)
         self.assertAlmostEqual(row["communication_mb"], 1.60)
+
+    def test_doppio_extrapolated_row_is_scoped(self) -> None:
+        row = cgp.doppio_extrapolated_64bit_row()
+        exponent = math.log(13.17 / 0.42) / math.log(10)
+        self.assertEqual(row["m"], 1_000_000)
+        self.assertEqual(row["payload_bits"], 64)
+        self.assertEqual(row["source_type"], "author_extrapolated_literature_model")
+        self.assertEqual(row["measured"], "false")
+        self.assertAlmostEqual(row["scaling_exponent"], exponent)
+        self.assertAlmostEqual(row["cost_seconds"], 13.17 * 10**exponent)
+        self.assertAlmostEqual(row["communication_mb"], 16.0)
+        self.assertIn("not a reported measurement", row["formula_scope"])
 
     def test_cost_function_rejects_non_benes_domains(self) -> None:
         with self.assertRaises(ValueError):
