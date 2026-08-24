@@ -1,8 +1,6 @@
-# Chafe Shuffle Artifact
+# Chafe Shuffle
 
-This repository contains the runnable Chafe Shuffle evaluation artifact:
-experiment scripts, checked-in CSV outputs, processed dataset snapshots, and
-vendored DPF backends.
+This repository contains the runnable Chafe Shuffle evaluation artifact
 
 ## Setup
 
